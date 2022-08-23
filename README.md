@@ -83,6 +83,8 @@ mfetch is a python script that takes an IMDb list exported as CSV, and downloads
 
 To export an IMDb list to CSV you need to open the list on IMDb's website and press the three dots found here:
 
+![image](https://user-images.githubusercontent.com/30209851/186282847-ddf747af-d5e7-4572-a59a-a3e557bd5cf9.png)
+
 This script can run for hours if your script is very big. Because of this you can run it with the -u/--update options to make it take an earlier JSON that it outputted and only add movies from the list that are not already there. So if you only want to update it with the latest movie you've watched, it will only take a couple of seconds.
 
 The first thing you need to do is run this. mfetch is a python script that 
