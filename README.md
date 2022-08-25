@@ -165,6 +165,8 @@ mup will:
 
 The movies directory will end up looking like this:
 
+![image](https://user-images.githubusercontent.com/30209851/186733292-5f66ac11-3299-4fc2-85f7-a4b6f7d8b039.png)
+![image](https://user-images.githubusercontent.com/30209851/186733395-d31d1456-2f78-42f7-a77f-1013d648efac.png)
 
 The names of these lists and categories is not important. Later I'll explain how to configure mup with the lists and categories you're interested in.
 
