@@ -94,7 +94,7 @@ mfetch is a Python script that takes an IMDb list exported to CSV, and downloads
 
 To export an IMDb list to CSV you need to open the list on IMDb's website and press the three dots found here:
 
-![image](https://user-images.githubusercontent.com/30209851/186282847-ddf747af-d5e7-4572-a59a-a3e557bd5cf9.png)
+![image](https://user-images.githubusercontent.com/30209851/187076718-1636f8a2-6b0d-416f-bfe5-0b7627a8f79b.png)
 
 Then press the 'Export' button to download the list as a CSV. Say the file is named 'movies.csv'. Then the next thing you would do is run:
 
@@ -178,7 +178,7 @@ mup will:
 
 The movies directory (not to be confused with the directory for the category 'movies') will end up looking like this:
 
-![image](https://user-images.githubusercontent.com/30209851/186733292-5f66ac11-3299-4fc2-85f7-a4b6f7d8b039.png)
+![image](https://user-images.githubusercontent.com/30209851/187076736-664562c6-c952-4594-80ea-9c6817213e48.png)
 
 And the 'all', 'movies', 'shows', 'rated' directories will all look like this (but with different file contents):
 
