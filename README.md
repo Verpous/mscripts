@@ -236,7 +236,7 @@ Now let's talk about categories. A category definition looks like this:
 
 `<category-name>` is the name of the category. The fact that I have a category 'home' means that mup will produce a directory 'home' for all this category's files. Like list names, this can only contain alphanumeric characters and underscores, and is case-insensitive and becomes lower-case.
 
-`<mprint-options>` is a **comma-delimited** list of options to pass to mprint. For example, the 'rated' category is a category for all the movies and shows I've watched, but only the ones I rated. It does this by passing the options `-x myrating` to mprint. If you don't want to pass any options to mprint, set this to `-`.
+`<mprint-options>` is a **comma-delimited** list of options to pass to mprint. For example, the 'rated' category is for all the movies and shows I've watched, but only the ones I rated. It does this by passing `-x myrating` to mprint. If you don't want to pass any options to mprint, set this to `-`.
 
 `<lists>` is a **comma-delimited** list of list names that are combined to form this category. The 'all' category from above is for movies and shows combined. The 'dvds' category includes only movies from the 'dvds' list. When you run mup to download some lists, mup automatically updates only the categories which depend on them. This field is case-insensitive, like list names.
 
