@@ -276,7 +276,7 @@ ct_producer = 'producer'
 ct_cinematographer = 'cinematographer'
 ct_stunt_performer = 'stunt performer'
 valid_crew_types = [ct_cast, ct_editor, ct_writer, ct_director, ct_composer, ct_producer, ct_cinematographer, ct_stunt_performer]
-default_cluster = {
+default_grouping = {
     ct_cast: False,
     ct_stunt_performer: False,
     ct_editor: True,
@@ -309,8 +309,8 @@ parser = argparse.ArgumentParser(
     description='Give this the output of mfetch.py and a crew type and it will print the movies organized by crewmembers',
     epilog='''Crew types, sort keys, and group sort keys all support many aliases so you can use similar words that make sense to you,
 and omit spaces or replace them with '-' or '_' (e.g., 'myrating', 'stunt_performer')''')
-parser.add_argument('-c', '--cluster', choices=['yes', 'auto', 'no'], type=str.lower, default='auto', action='store', help=
-    'If yes, will group people who\'ve collaborated together. Default is auto, which uses a cluster mode that makes sense for CREW')
+parser.add_argument('-G', '--group', choices=['yes', 'auto', 'no'], type=str.lower, default='auto', action='store', help=
+    'If yes, will group people who\'ve collaborated together. Default is auto, which uses a group mode that makes sense for CREW')
 parser.add_argument('-m', '--min', metavar='NUM', type=int, default=1, action='store', help=
     'Groups with fewer than NUM movies will not be printed. Defaults to unbounded')
 parser.add_argument('-s', '--sort', metavar='KEY', type=sort_alias, default=sk_released, action='store', help=
@@ -324,7 +324,7 @@ parser.add_argument('-x KEY', '--exclude', choices=['rating', 'metascore', 'myra
 parser.add_argument('CREW', type=crew_alias, action='store', help=
     f'The type of crewmember to organize movies by. Valid crew types: {", ".join(valid_crew_types)}')
 parser.add_argument('JSON', nargs='*', action='store', help=
-    '''A list of input JSONs, which were outputted by mfetch.py. They will be treated as a single list of unique movies.
+    '''A list of input JSONs, which were output by mfetch.py. They will be treated as a single list of unique movies.
 With no JSON, or when JSON is -, use standard input''')
 args = parser.parse_args()
 
@@ -338,7 +338,7 @@ sort_key = args.sort
 gsort_key = args.group_sort
 min_length = args.min
 jsonfiles = ['-'] if len(args.JSON) == 0 else args.JSON
-cluster_mode = True if args.cluster == 'yes' else False if args.cluster == 'no' else default_cluster[crew_type]
+group_mode = True if args.group == 'yes' else False if args.group == 'no' else default_grouping[crew_type]
 exclude_keys = args.exclude
 default_xkey = { 'rating': -1, 'metascore': '-1', 'myrating': '' }
 
@@ -358,7 +358,7 @@ for jsonfile in jsonfiles:
     excluded = [m for m in data['movies'] if True not in (m[xkey] == default_xkey[xkey] for xkey in exclude_keys)]
     movies.update(json_to_movie(m, crew_type) for m in excluded)
 
-if cluster_mode:
+if group_mode:
     # High level, the algorithm is as follows:
     #
     # foreach movie:
@@ -399,7 +399,7 @@ if cluster_mode:
 
     # This is step 2 of the algorithm: finding each people set's credits.
     creds = [ (people, [Appearance(movie, []) for movie in movies if people.issubset(movie.people)]) for people in people_sets]
-else: # Not cluster mode.
+else: # Not group mode.
     creds = dict()
 
     for movie in movies:
@@ -444,14 +444,14 @@ Total people: {len(total_people)}
 ''')
 
 # We want a uniform squish for both breakdowns.
-if cluster_mode:
+if group_mode:
     squish = get_squish(creds, gsorter_nmovies, gsort_func(gsk_npeople))
 else:
     squish = get_squish(creds, gsorter_nmovies)
     
 print(create_breakdown(creds, '# of Groups For Every # of Movies', gsorter_nmovies, squish))
 
-if cluster_mode:
+if group_mode:
     print(create_breakdown(creds, '# of Groups For Every Group Size', gsort_func(gsk_npeople), squish))
 
 print()

@@ -23,7 +23,7 @@ source "$scripts"/options.sh
 source "$scripts"/utils.sh
 shopt -s extglob
 
-which cygpath &> /dev/null && path() { cygpath "$1"; } || path() { echo -n "$1"; }
+which cygpath &> /dev/null && path() { cygpath -- "$1"; } || path() { echo -n "$1"; }
 do_fetch=true
 do_gen=true
 do_optimize=true
@@ -59,7 +59,7 @@ take_opt() {
         F) ## Comma-delimited options to pass to mfetch. DON'T pass -u/--update here.
             readarray -td , dopts < <(echo -n "$2")
             ;;
-        P) ## Comma-delimited options to pass to mprint. DON'T pass -p here, and -c is not recommended. It's your responsibility to ensure this doesn't conflict with the category mprint options.
+        P) ## Comma-delimited options to pass to mprint. DON'T pass -p here, and -G is not recommended. It's your responsibility to ensure this doesn't conflict with the category mprint options.
             readarray -td , popts < <(echo -n "$2")
             ;;
     esac
@@ -86,23 +86,25 @@ if [[ -f "$config" && -r "$config" ]]; then
         case "$line" in
             # We restrict fields to a set of characters that we know we can safely work with.
             # We don't even have to quote them, but we'll still try our best.
-            ?(\ )l\ +([[:word:]])\ +([[:word:]])\ +([[:word:],])?(\ ))
+            ?(\ )[lL]\ +([[:word:]])\ +([[:word:]])\ +([[:word:],])?(\ ))
                 IFS=' ' read -r t lname lid default < <(echo -n "$line")
+                lname="${lname,,}"
                 list_ids["$lname"]="$lid"
 
                 # Defaults are kept in an associative array where we only care about the keys.
                 # This is so that if you have two lists with the same name, the later one overwrites the earlier one.
-                [[ "$default" == y* ]] && default_lists["$lname"]=1 || unset default_lists["$lname"]
+                [[ "$default" == [Yy]* ]] && default_lists["$lname"]=1 || unset default_lists["$lname"]
                 ;;
-            ?(\ )c\ +([[:word:]])\ +([!\ ])\ +([[:word:],])?(\ ))
+            ?(\ )[cC]\ +([[:word:]])\ +([!\ ])\ +([[:word:],])?(\ ))
                 IFS=' ' read -r t cname cpopts_str clists_str < <(echo -n "$line")
+                cname="${cname,,}"
                 # Bash doesn't support nested arrays so cat_popts and cat_lists actually hold references to arrays.
                 cat_popts["$cname"]=mup_var$(( namei++ ))
                 cat_lists["$cname"]=mup_var$(( namei++ ))
                 declare -n cpopts="${cat_popts[$cname]}"
                 declare -n clists="${cat_lists[$cname]}"
                 [[ "$cpopts_str" == '-' ]] && cpopts=() || readarray -td , cpopts < <(echo -n "$cpopts_str")
-                readarray -td , clists < <(echo -n "$clists_str")
+                readarray -td , clists < <(echo -n "${clists_str,,}")
                 ;;
             ?(\ )) # Empty lines are allowed and ignored.
                 ;;
@@ -110,7 +112,7 @@ if [[ -f "$config" && -r "$config" ]]; then
                 utils::error "Line '$line' in the configuration file is not valid."
                 ;;
         esac
-    done < <(tr '\t[:upper:]' ' [:lower:]' < "$config" | tr -s ' ' | cat - <(echo))
+    done < <(expand -t 1 -- "$config" | tr -s ' ' | cat - <(echo))
 else
     echo "Configuration file '$config' doesn't exist or you do not have permissions for it. Ignoring it." >&2
 fi
