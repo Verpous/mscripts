@@ -100,7 +100,7 @@ Then press the 'Export' button to download the list as a CSV. Say the file is na
 
 `python mfetch.py -u movies.csv`
 
-This will create a JSON named movies.json in the current directory. Note the -u flag. This script can run for hours if your list is very big. What -u does is it makes mfetch only download movies which are not already in movies.json. So you only need do the big run once, and subsequent runs will finish in seconds. Note that you can add `-u` even if movies.json doesn't exist yet, and it will be ignored.
+This will create a JSON named 'movies.json' in the current directory. Note the `-u` flag. This script can run for hours if your list is very big. What `-u` does is it makes mfetch only download movies which are not already in 'movies.json'. So you only need do the big run once, and subsequent runs will finish in seconds. Note that you can add `-u` even if 'movies.json' doesn't exist yet, and it will be ignored.
 
 To make sure everything works, I recommend running `python mfetch.py -m 10 <your-list>.csv`. This will make mfetch download no more than 10 movies, so you can see if it works before doing the big run. Once you're confident, you can run mfetch again with `-u` to not even redownload those 10 movies.
 
@@ -112,7 +112,7 @@ mprint is a Python script which takes a JSON or multiple JSONs output by mfetch 
 
 `python mprint.py cast dvds.json`.
 
-mprint takes as input a **crew type**, in this case cast, and a list of JSON files. The output is a list of crewmembers of the requested type and what movies they've been in from any one of the input JSONs. For example, I've got my list of shows I've watched in shows.json, and movies in movies.json. The command:
+mprint takes as input a **crew type**, in this case cast, and a list of JSON files. The output is a list of crewmembers of the requested type and what movies they've been in from any one of the input JSONs. For example, I've got my list of shows I've watched in 'shows.json', and movies in 'movies.json'. The command:
 
 `python mprint.py director shows.json movies.json`
 
@@ -172,7 +172,7 @@ For example, I have a list of all the movies I've watched on IMDb, and one for s
 
 mup will: 
 
-1. Download my movies and shows lists from IMDb as CSVs, and place these CSVs in the movies directory under the names movies.csv, shows.csv
+1. Download my movies and shows lists from IMDb as CSVs, and place these CSVs in the movies directory under the names 'movies.csv', 'shows.csv'
 2. Run mfetch to download additional data, producing two JSONs (also in the movies directory): 'movies.json' and 'shows.json'
 3. Create four directories in the movies directory for me named 'movies', 'shows', 'all', and 'rated'. These are my categories. Each of these directories includes mprint output for every crew type in files named: 'cast.txt', 'director.txt', 'writer.txt', etc. The 'movies' category includes only people who were in movies. The 'shows' directory is only for people from the shows. The 'all' category is for movies and shows combined. The 'rated' category includes everyone but only from movies/shows that I've rated
 
