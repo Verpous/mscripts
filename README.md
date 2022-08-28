@@ -188,7 +188,7 @@ The names of these lists and categories is not important. Later I'll explain how
 
 ### mup & Firefox
 
-In order to automatically export your list to CSV, mup needs to request a URL from IMDb. But if the list is private, IMDb will refuse unless you are logged in. The way I was able to solve this problem is to make mup open up the URL in Firefox, where you are assumed to be already logged in. I wish I could have solved it better (if you want to help, please do get in touch). What this means is that you need to have Firefox and be logged in to IMDb for mup to work. Also, when you run mup you'll get some leftover open tabs in Firefox that I haven't been able to close automatically.
+In order to automatically export your list to CSV, mup needs to request a URL from IMDb. But if the list is private, IMDb will refuse unless you are logged in. The way I was able to solve this problem is to make mup open up the URL in Firefox, where you are assumed to be already logged in. I wish I could have solved it better (if you want to help, please get in touch by opening an issue or something). What this means is that you need to have Firefox and be logged in to IMDb for mup to work. Also, when you run mup you'll get some leftover open tabs in Firefox that I haven't been able to close automatically.
 
 ### Configuration
 
