@@ -81,27 +81,27 @@ pattern="$1"
 shift
 
 get_catdir() {
-    [[ -d "$mdir" && -r "$mdir" ]] || { echo "Movies directory '$mdir' doesn't exist or you do not have permissions for it." >&2; return 1; }
+    [[ -d "$mdir" && -r "$mdir" ]] || { echo "Movies directory '$mdir' doesn't exist or you do not have permissions for it" >&2; return 1; }
     [[ -v config ]] || config="$mdir/mconfig.txt"
 
     if [[ ! -v category && -f "$config" && -r "$config" ]]; then
         category="$(grep -ioEm 1 "^[[:blank:]]*c[[:blank:]]+[[:alnum:]_]+" -- "$config" | grep -ioE "[[:alnum:]_]+$")" ||
-            { echo "Unable to obtain default category from the configuration file." >&2; return 1; }
+            { echo "Unable to obtain default category from the configuration file" >&2; return 1; }
         category="$category"
     elif [[ ! -v category ]]; then
-        echo "Configuration file '$config' doesn't exist or you do not have permissions for it, therefore a default category could not be determined." >&2
+        echo "Configuration file '$config' doesn't exist or you do not have permissions for it, therefore a default category could not be determined" >&2
         return 1
     fi
 
     # We want to check if $category is a directory directly in $mdir. Find alone is not enough,
     # because it doesn't support fixed string patterns. So we get a list of valid categories and use grep to match the one we want.
     find -- "$mdir" -mindepth 1 -maxdepth 1 -type d -printf "%f\0" | grep -Fxqz -- "$category" ||
-        { echo "Category '$category' does not exist in the movies directory '$mdir'."; return 1; }
+        { echo "Category '$category' does not exist in the movies directory '$mdir'"; return 1; }
     catdir="$mdir/$category"
     return 0
 }
 
-get_catdir || echo "WHERE arguments relative to the category directory will not work because the directory could not be determined." >&2
+get_catdir || echo "WHERE arguments relative to the category directory will not work because the directory could not be determined" >&2
 
 if (( $# == 0 )); then
     # Nothing to do here if there are no args and no defaults.
@@ -163,7 +163,7 @@ for loc in "${where[@]}"; do
         file=/dev/stdin
     else
         IFS='' read -rd '' file < <(find -- "$loc" "$loc.txt" "$catdir/$loc" "$catdir/$loc.txt" -maxdepth 0 -type f -readable -print0 2> /dev/null)
-        [[ -z "$file" ]] && { echo "'$loc' is not a valid WHERE. Skipping it." >&2; continue; }
+        [[ -z "$file" ]] && { echo "'$loc' is not a valid WHERE. Skipping it" >&2; continue; }
     fi
 
     # With -H, creating an op that prints the filename (with optional color).

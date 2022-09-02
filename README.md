@@ -222,11 +222,11 @@ Every line in the mconfig defines either a list or a category. Lines which defin
 
 `L <list-name> <list-id> <default?>`
 
-`<list-name>` is a name you want to give your list. When I run `bash mup.sh movies`, mup looks for a list with the name movies in my mconfig, and the files it creates for this list get named 'movies.csv', 'movies.json'. This field only supports alphanumeric characters and underscores, and is case-insensitive. It gets converted to lower-case.
+`<list-name>` is a name you want to give your list. When I run `bash mup.sh movies`, mup looks for a list with the name movies in my mconfig, and the files it creates for this list get named 'movies.csv', 'movies.json'. This field only supports alphanumeric characters and underscores, and is case-insensitive.
 
 `<list-id>` is the ID given to your list by IMDb (the IDs in this example are made up). You can find out your list's ID by opening it up in the browser. The URL of the list page should look like this: `imdb.com/list/ls123456789`. Whatever number it says there instead of '123456789' is your list's ID. mup needs to know this ID in order to export your list to CSV.
 
-You can actually run run `bash mup.sh 123456789` directly to download this list and create a category for it even if it's not in your mconfig. But it's easier to memorize a name and naming it lets you include it in cool categories.
+You can actually run `bash mup.sh 123456789` directly to download this list and create a category for it even if it's not in your mconfig. But it's easier to memorize a name and naming it lets you include it in cool categories.
 
 `<default?>` indicates if this list should be downloaded when you run mup without arguments. If it starts with a Y (case-insensitive), that means yes. Any other string means no. With the example above, if I run mup without arguments, only the movies and shows lists get downloaded.
 
@@ -234,7 +234,7 @@ Now let's talk about categories. A category definition looks like this:
 
 `C <category-name> <mprint-options> <lists>`
 
-`<category-name>` is the name of the category. The fact that I have a category 'home' means that mup will produce a directory 'home' for all this category's files. Like list names, this can only contain alphanumeric characters and underscores, and is case-insensitive and becomes lower-case.
+`<category-name>` is the name of the category. The fact that I have a category 'home' means that mup will produce a directory 'home' for all this category's files. Like list names, this can only contain alphanumeric characters and underscores, and is case-insensitive.
 
 `<mprint-options>` is a **comma-delimited** list of options to pass to mprint. For example, the 'rated' category is for all the movies and shows I've watched, but only the ones I rated. It does this by passing `-x myrating` to mprint. If you don't want to pass any options to mprint, set this to `-`.
 
@@ -287,7 +287,7 @@ The use of `|` in the pattern ensures that it will work no matter which movie ca
 
 You can actually include the newline character in the pattern. But the pattern does **not** accept escape sequences like '\n'. Escape sequences have the same behavior as egrep. To match a newline, you need to actually have a newline character in the string, which in Bash you can insert with `$'\n'`. However, it's a lot easier to fill in the gap between lines with a simple wildcard like `.*`, as you can see above.
 
-mgrep searches in a category of your choice, and prints all the people from any crew type who match the pattern in this category. Say I want to find all the people from movies I own at home who were in *The Lord of the Rings: Fellowship of the Ring* and have an average rating of at least 8.6 and less than 8.8. Then I'll do:
+mgrep searches in a category of your choice, and prints all the people from any crew type who match the pattern in this category. Say I want to find all the people from movies I own at home who were in *The Lord of the Rings: The Fellowship of the Ring* and have an average rating of at least 8.6 and less than 8.8. Then I'll do:
 
 `bash mgrep.sh -l home 'average rating: 8\.[6-7].*the fellowship of the ring'`
 
@@ -357,13 +357,13 @@ Or you could pass in `-` to read from standard input. This lets you pipe mprint 
 
 `python mprint.py director -s alphabetical | bash mgrep.sh "george lucas" writer - ~/Desktop/cast.txt`
 
-By default mgrep searches all crew types in the given category. If you don't specify a category, mgrep searches in **the first category defined in the mconfig file**. The same file mup uses. For me, the default category is all movies and shows I've seen combined.
+By default mgrep searches all crew types in the given category. If you don't specify a category (with `-l`), mgrep searches in **the first category defined in the mconfig file**. The same file mup uses. For me, the default category is all movies and shows I've seen combined.
 
 There's lots of options to control the output of mgrep, many of which are borrowed from grep. As always you can read more with `-h`.
 
 ## What Else is Included?
 
-The repository also includes two additional scripts I haven't talked about, 'options.sh' and 'utils.sh'. These are just Bash libraries I wrote to use in my scripts. mup and mgrep depend on them, so you get to have them as a bonus. You could even use them in your own scripts.
+The repository also includes two additional scripts I haven't talked about: 'options.sh' and 'utils.sh'. These are just Bash libraries I wrote to use in my scripts. mup and mgrep depend on them, so you get to have them as a bonus. You could even use them in your own scripts.
 
 options is a wrapper around getopts with a focus on brevity and easily generating a useful `-h` option.
 

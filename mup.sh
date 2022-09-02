@@ -69,10 +69,10 @@ options::init fpom:c:b:d:F:P: "[LIST]..."
 options::getopts take_opt -1
 shift $SHIFT_AMT
 
-[[ -d "$mdir" && -w "$mdir" ]] || utils::error "Movies directory '$mdir' doesn't exist or you do not have permissions for it."
-[[ -d "$fdir" ]] || utils::error "Firefox installation directory '$fdir' doesn't exist."
-[[ -f "$fdir"/firefox && -x "$fdir"/firefox ]] || utils::error "File '$fdir/firefox' doesn't exist or you do not have permissions for it."
-[[ -d "$downloads" && -w "$downloads" && -r "$downloads" ]] || utils::error "Downloads directory '$downloads' doesn't exist or you do not have permissions for it."
+[[ -d "$mdir" && -w "$mdir" ]] || utils::error "Movies directory '$mdir' doesn't exist or you do not have permissions for it"
+[[ -d "$fdir" ]] || utils::error "Firefox installation directory '$fdir' doesn't exist"
+[[ -f "$fdir"/firefox && -x "$fdir"/firefox ]] || utils::error "File '$fdir/firefox' doesn't exist or you do not have permissions for it"
+[[ -d "$downloads" && -w "$downloads" && -r "$downloads" ]] || utils::error "Downloads directory '$downloads' doesn't exist or you do not have permissions for it"
 [[ -v config ]] || config="$mdir/mconfig.txt"
 
 declare -A default_lists=()
@@ -109,17 +109,17 @@ if [[ -f "$config" && -r "$config" ]]; then
             ?(\ )) # Empty lines are allowed and ignored.
                 ;;
             *)
-                utils::error "Line '$line' in the configuration file is not valid."
+                utils::error "Line '$line' in the configuration file is not valid"
                 ;;
         esac
     done < <(expand -t 1 -- "$config" | tr -s ' ' | cat - <(echo))
 else
-    echo "Configuration file '$config' doesn't exist or you do not have permissions for it. Ignoring it." >&2
+    echo "Configuration file '$config' doesn't exist or you do not have permissions for it. Ignoring it" >&2
 fi
 
 # Setting defaults if needed. Erroring out if there are none.
 (( $# == 0 )) && set -- "${!default_lists[@]}"
-(( $# == 0 )) && utils::error "No LIST provided and there are no defaults set up."
+(( $# == 0 )) && utils::error "No LIST provided and there are no defaults set up"
 
 # We'll use firefox to fetch the list export because the list is private and in firefox I am already signed in.
 # But before, we have to know what's the current most recent csv in the downloads folder, so that we'll know when it changes.
@@ -158,7 +158,7 @@ fetch() {
     while local in_csv="$(get_latest_csv)"; [[ "$initial_csv" == "$in_csv" ]]; do
         if (( SECONDS > timeout )); then
             $optimizing && mv "$orig_json" "$mdir/$out_json"
-            echo "Timed out when trying to download '$out_csv'. Skipping it." >&2
+            echo "Timed out when trying to download '$out_csv'. Skipping it" >&2
             return 1
         fi
     done
@@ -169,7 +169,7 @@ fetch() {
     while (( "$(stat --format="%s" "$downloads/$in_csv")" == 0 )); do
         if (( SECONDS > timeout )); then
             $optimizing && mv "$orig_json" "$mdir/$out_json"
-            echo "Timed out when trying to download '$out_csv'. Skipping it." >&2
+            echo "Timed out when trying to download '$out_csv'. Skipping it" >&2
             return 1
         fi
     done
@@ -244,7 +244,7 @@ if $do_gen; then
 
         # We'll skip this category if one of its dependencies is missing.
         for json in "${jsons[@]}"; do
-            [[ ! -f "$json" ]] && { echo "Category '$cname' requires file '$json' which doesn't exist. Skipping it." >&2; continue 2; }
+            [[ ! -f "$json" ]] && { echo "Category '$cname' requires file '$json' which doesn't exist. Skipping it" >&2; continue 2; }
         done
 
         mkdir -p "$mdir/$cname"
