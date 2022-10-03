@@ -160,10 +160,10 @@ for loc in "${where[@]}"; do
     fi
 
     if [[ "$loc" == '-' ]]; then
-        file=/dev/stdin
+        infile=/dev/stdin
     else
-        IFS='' read -rd '' file < <(find -- "$loc" "$loc.txt" "$catdir/$loc" "$catdir/$loc.txt" -maxdepth 0 -type f -readable -print0 2> /dev/null)
-        [[ -z "$file" ]] && { echo "'$loc' is not a valid WHERE. Skipping it" >&2; continue; }
+        IFS='' read -rd '' infile < <(find -- "$loc" "$loc.txt" "$catdir/$loc" "$catdir/$loc.txt" -maxdepth 0 -type f -readable -print0 2> /dev/null)
+        [[ -z "$infile" ]] && { echo "'$loc' is not a valid WHERE. Skipping it" >&2; continue; }
     fi
 
     # With -H, creating an op that prints the filename (with optional color).
@@ -180,7 +180,7 @@ for loc in "${where[@]}"; do
     # We also get rid of the head of the file up to where it starts listing people.
     # The first person in the list gets printed a little different, so we inject our own ack in there to make him like the rest.
     # The flattened file is stored to a temp file (and also piped on) because we'll need to revisit it if $limit==true.
-    sed -En "s/^$/$ack/;/^[^[:space:]].*:$/,\$p" -- "$file" | tr "\\n$ack" "$ack\\n" | cat <(echo -n "$ack") - | tee "$tmpfile" |
+    sed -En "s/^$/$ack/;/^[^[:space:]].*:$/,\$p" -- "$infile" | tr "\\n$ack" "$ack\\n" | cat <(echo -n "$ack") - | tee "$tmpfile" |
     # Steps 2 and 3. We match the pattern and then unflatten.
     # We don't restore it exactly to its original form, to achieve prettier output.
     grep -E --color=$grepcolor $casing $invert $mflag -e "$pattern" | tr -d '\n' | tr "$ack" '\n' |

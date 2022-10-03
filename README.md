@@ -110,7 +110,7 @@ Like all other scripts here, you can use `-h` to get the full list of options.
 
 mprint is a Python script which takes a JSON or multiple JSONs output by mfetch for your lists, and outputs text with insights about the movies in these lists for you to read. The example from earlier about actors in movies I own on DVD was generated with the command:
 
-`python mprint.py cast dvds.json`.
+`python mprint.py cast dvds.json`
 
 mprint takes as input a **crew type**, in this case cast, and a list of JSON files. The output is a list of crewmembers of the requested type and what movies they've been in from any one of the input JSONs. For example, I've got my list of shows I've watched in 'shows.json', and movies in 'movies.json'. The command:
 

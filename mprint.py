@@ -362,9 +362,9 @@ if group_mode:
     # High level, the algorithm is as follows:
     #
     # foreach movie:
-    #     intersect movie's people set with every other movie
-    #     if the intersection with a movie (including self) is not empty, add it to a set
-
+    #     intersect movie's people set with every other movie's
+    #     if the intersection with a movie (including self) is not empty, add that intersection to a set of sets
+    #
     # foreach people set in the set of sets we built:
     #     find all movies whose person set is a superset of this set
     #

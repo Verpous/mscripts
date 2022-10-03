@@ -21,6 +21,7 @@ import sys
 import glob
 import os
 import argparse
+import re
 from imdb import Cinemagoer, IMDbError
 from imdb.utils import RolesList
 from imdb.Person import Person
@@ -29,8 +30,9 @@ from imdb.Movie import Movie
 
 maxdesc = 20
 barlen = 30
+maxsuff = 50
 
-def progbar(desc, count, total):
+def progbar(desc, count, total, suffix=None):
     if quiet:
         return
 
@@ -38,7 +40,8 @@ def progbar(desc, count, total):
     fill = int((float(count) / float(total)) * barlen) if total != 0 else barlen
     fillstr = fill * '#' + ' ' * (barlen - fill)
     fracstr = f'({count} / {total})'.ljust(fraclen)
-    print(f'{(desc + ":").ljust(maxdesc)} [{fillstr}] {fracstr}', end='\n' if count == total else '\r')
+    suffstr = ' ' * maxsuff if suffix == None else (suffix if len(suffix) <= maxsuff else (suffix[:maxsuff - 3] + '...')).ljust(maxsuff)
+    print(f'{(desc + ":").ljust(maxdesc)} [{fillstr}] {fracstr} {suffstr}', end='\n' if count == total else '\r')
 
 sys.stdout.reconfigure(encoding='utf-8', newline='\n')
 
@@ -48,6 +51,10 @@ parser.add_argument('-u', default=False, action='store_true', help=
     'The program will only fetch movies not already present in the output JSON')
 parser.add_argument('--update', metavar='JSON', default=None, action='store', help=
     'Like -u, but you may specify a different file than the output JSON to compare against. This option overrides -u')
+parser.add_argument('-f', '--force', metavar='PATTERN', default=None, action='store', help=
+    '''If -u/--update specified, forces titles that match PATTERN (case-insensitive) to be redownloaded even if they are already in the update JSON.
+Intended for redownloading shows after a new season has come out.
+PATTERN uses regex syntax from python's re library, which is identical to egrep unless you use very advanced features''')
 parser.add_argument('-m', '--max', metavar='NUM', type=int, default=0x7FFFFFFF, action='store', help=
     'Specify how many movies to fetch. Mainly for debugging. Defaults to unbounded')
 parser.add_argument('-q', '--quiet', default=False, action='store_true', help=
@@ -56,13 +63,14 @@ parser.add_argument('CSV', action='store', help=
     'A CSV export of an IMDb list. If -, use standard input')
 parser.add_argument('JSON', nargs='?', default=None, action='store', help=
     '''A JSON file to output to. Defaults to the same name as the input file but with type .json.
-If JSON -, use standard output. It\'s recommended to combine this with -q.
+If JSON is -, use standard output. If you use standard output, you'll probably also want to use -q.
 If CSV is -, JSON must be specified''')
 args = parser.parse_args()
 
 csvfile = args.CSV
 fetch_amount = args.max
 quiet = args.quiet
+forcepat = args.force
 
 if args.JSON == None:
     if csvfile == '-':
@@ -97,7 +105,7 @@ with sys.stdin if csvfile == '-' else open(csvfile, 'r', newline='') as f:
             continue
 
         progbar("Reading CSV", i - 1, reader.line_num - 1)
-        all_csv_data.append((row[1][2:], row[2], row[13], row[15] if has_myrating else ''))
+        all_csv_data.append((row[1][2:], row[5], row[2], row[13], row[15] if has_myrating else ''))
 
     progbar("Reading CSV", reader.line_num - 1, reader.line_num - 1)
 
@@ -108,8 +116,17 @@ if update_mode:
     with open(upfile, 'r') as f:
         in_json = json.load(f)
     
-    in_ids = [movie['imdbID'] for movie in in_json['movies']]
-    csv_data = [(iden, wdate, rdate, myrating) for iden, wdate, rdate, myrating in all_csv_data if iden not in in_ids]
+    # Creating list of movie IDs which we want to redownload even if they are already in the input JSON.
+    if forcepat == None:
+        force_ids = []
+    else:
+        force_ids = [movie['imdbID'] for movie in in_json['movies'] if re.search(forcepat, movie['title'], flags=re.IGNORECASE)]
+
+    # Creating list of IDs which we don't need to download because of update mode.
+    no_redownload_ids = [movie['imdbID'] for movie in in_json['movies'] if movie['imdbID'] not in force_ids]
+
+    # Creating list of what we want to download by excluding the ones we don't.
+    csv_data = [(iden, title, wdate, rdate, myrating) for iden, title, wdate, rdate, myrating in all_csv_data if iden not in no_redownload_ids]
 else:
     csv_data = all_csv_data
 
@@ -126,8 +143,8 @@ movies = list()
 info = (*Movie.default_info, 'critic reviews', 'full credits')
 exit_early = None
 
-for i, (iden, wdate, rdate, myrating) in enumerate(csv_data):
-    progbar("Downloading", i, len(csv_data))
+for i, (iden, title, wdate, rdate, myrating) in enumerate(csv_data):
+    progbar("Downloading", i, len(csv_data), suffix=title)
     success = False
 
     # Errors are rather common and usually trying again works.
@@ -202,14 +219,15 @@ for i, movie in enumerate(movies):
 
 progbar("Building JSON", len(movies), len(movies))
 
-# In update mode, appending movies from the input file.
+# In update mode, appending movies from the input JSON except the ones which have been removed from the list or that were force redownloaded.
 if update_mode:
-    json_movies += in_json['movies']
+    append_ids = [iden for iden, title, wdate, rdate, myrating in all_csv_data if iden not in force_ids]
+    json_movies += [movie for movie in in_json['movies'] if movie['imdbID'] in append_ids]
 
 # For data that we pull from the CSV, we'll update even movies that are skipped by update mode.
 # This is because it doesn't cost us anything, and because one of the values is my rating,
 # which can change so a movie which was already previous fetched may need to be updated.
-for i, (iden, wdate, rdate, myrating) in enumerate(all_csv_data):
+for i, (iden, title, wdate, rdate, myrating) in enumerate(all_csv_data):
     progbar("Adding CSV data", i, len(all_csv_data))
     json_movie = next((m for m in json_movies if m['imdbID'] == iden), None)
 
@@ -232,7 +250,7 @@ bad_people = [p for m in json_movies for k in people_keys for p in m[k] if bad_n
 exit_early = None
 
 for i, person in enumerate(bad_people):
-    progbar("Correcting errors", i, len(bad_people))
+    progbar("Cleansing data", i, len(bad_people))
     iden = person['id']
     good_appearances = [p for m in json_movies for k in people_keys for p in m[k] if iden == p['id'] and not bad_name(p)]
 
@@ -255,7 +273,7 @@ for i, person in enumerate(bad_people):
             exit_early = i
             break
 
-progbar("Correcting errors", len(bad_people) if exit_early == None else exit_early, len(bad_people))
+progbar("Cleansing data", len(bad_people) if exit_early == None else exit_early, len(bad_people))
 
 # Outputting.
 with sys.stdout if outfile == '-' else open(outfile, 'w', newline='\n') as f:
