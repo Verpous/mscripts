@@ -46,7 +46,7 @@ def progbar(desc, count, total, suffix=None):
 sys.stdout.reconfigure(encoding='utf-8', newline='\n')
 
 parser = argparse.ArgumentParser(
-    'Give this an export of an IMDb list and it will output a JSON with additional data about the movies in the list')
+    description='Give this an export of an IMDb list and it will output a JSON with additional data about the movies in the list')
 parser.add_argument('-u', default=False, action='store_true', help=
     'The program will only fetch movies not already present in the output JSON')
 parser.add_argument('--update', metavar='JSON', default=None, action='store', help=

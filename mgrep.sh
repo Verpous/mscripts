@@ -17,7 +17,7 @@
 ## Prints the full credits of any person whose credits match PATTERN in mprint's output files.
 ## PATTERN is in extended regex (like egrep, grep -E).
 ## WHERE indicates a .txt file output by mprint. Supports (in order of precedence):
-## 1. '-' for standard input (so you can pipe mprint into mgrep).
+## 1. '-' for standard input (so you can pipe mprint into mgrep)
 ## 2. Absolute paths, paths relative to the current directory
 ## 3. Paths relative to the category directory
 ## In all forms the .txt extension can optionally be omitted. All forms are case-sensitive.
