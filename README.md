@@ -13,7 +13,7 @@
   - [Installation](#installation)
   - [Notes](#notes)
 
-This is a set of tools I wrote to answer questions I had about the movies I've watched. Using mscripts, you can quickly answer questions like 'where else have I seen this actor?', 'what's the director I've seen the most movies from?', 'what's the full list of writers who wrote a Star Wars film?', and many others.
+This is a set of tools I wrote to answer questions I had about the movies I've watched. Using mscripts, you can quickly answer questions like "where else have I seen this actor?", "what's the director I've seen the most movies from?", "what's the full list of writers who wrote a Star Wars film?", and many others.
 
 All the tools are command line tools. To use their full power, you need to be comfortable with this. If you're not, there's only a single 3-letter command you need to remember in order to still make good use of them.
 
@@ -78,7 +78,7 @@ Samuel L. Jackson:
 ...
 ```
 
-What you're seeing here is a few of the actors who've been in movies I own on DVD, sorted by how many of those movies they've been in. This snippet only includes the top few. For every actor, it shows all the movies from my 'owned on DVD' list that they've been in sorted by release date, their roles in those movies, and the average rating and metascore of those movies.
+What you're seeing here is a few of the actors who've been in movies I own on DVD, sorted by how many of those movies they've been in. This snippet only includes the top few. For every actor, it shows all the movies from my "owned on DVD" list that they've been in sorted by release date, their roles in those movies, and the average rating and metascore of those movies.
 
 You can create lists like this for various types of crew: cast, directors, writers, composers, producers, cinematographers, and stunt cast. You can also control sorting options: you can sort movies by their release date, the date you watched them, their rating by IMDb users, their rating by you, their metascore, or alphabetically. You can sort people too, by their average user rating, your rating, or metascore, by the number of movies they've been in from the list, alphabetically, or by the number of people in the group (more on that later). You can also apply a filter to only see movies that you rated.
 
@@ -96,11 +96,11 @@ To export an IMDb list to CSV you need to open the list on IMDb's website and pr
 
 ![image](https://user-images.githubusercontent.com/30209851/187076718-1636f8a2-6b0d-416f-bfe5-0b7627a8f79b.png)
 
-Then press the 'Export' button to download the list as a CSV. Say the file is named 'movies.csv'. Then the next thing you would do is run:
+Then press the "Export" button to download the list as a CSV. Say the file is named "movies.csv". Then the next thing you would do is run:
 
 `python mfetch.py -u movies.csv`
 
-This will create a JSON named 'movies.json' in the current directory. Note the `-u` flag. This script can run for hours if your list is very big. What `-u` does is it makes mfetch only download movies which are not already in 'movies.json'. So you only need do the big run once, and subsequent runs will finish in seconds. Note that you can add `-u` even if 'movies.json' doesn't exist yet, and it will be ignored.
+This will create a JSON named "movies.json" in the current directory. Note the `-u` flag. This script can run for hours if your list is very big. What `-u` does is it makes mfetch only download movies which are not already in "movies.json". So you only need do the big run once, and subsequent runs will finish in seconds. Note that you can add `-u` even if "movies.json" doesn't exist yet, and it will be ignored.
 
 To make sure everything works, I recommend running `python mfetch.py -m 10 <your-list>.csv`. This will make mfetch download no more than 10 movies, so you can see if it works before doing the big run. Once you're confident, you can run mfetch again with `-u` to not even redownload those 10 movies.
 
@@ -112,7 +112,7 @@ mprint is a Python script which takes a JSON or multiple JSONs output by mfetch 
 
 `python mprint.py cast dvds.json`
 
-mprint takes as input a **crew type**, in this case cast, and a list of JSON files. The output is a list of crewmembers of the requested type and what movies they've been in from any one of the input JSONs. For example, I've got my list of shows I've watched in 'shows.json', and movies in 'movies.json'. The command:
+mprint takes as input a **crew type**, in this case cast, and a list of JSON files. The output is a list of crewmembers of the requested type and what movies they've been in from any one of the input JSONs. For example, I've got my list of shows I've watched in "shows.json", and movies in "movies.json". The command:
 
 `python mprint.py director shows.json movies.json`
 
@@ -146,7 +146,7 @@ Ethan Coen, Joel Coen:
 
 Because of this option, I make a distinction between **people** and **groups**. A person is just one guy, but a group is an entry like the one above which can be one or more people who collaborated. If you run mprint with `-G no`, then all groups will be 1-man groups and be no different than a person. By default mprint knows what group mode makes sense for each crew type so you do not need to specify it. Directors get grouped, actors don't, etc.
 
-The `-g` (lowercase) flag from earlier stands for 'group sort'. You can sort groups in a number of ways, including even by the number of people in the group.
+The `-g` (lowercase) flag from earlier stands for "group sort". You can sort groups in a number of ways, including even by the number of people in the group.
 
 Besides the ability to sort groups, you can also sort each group's movies with `-s`. You can also omit movies that are missing a key. For example, you can filter out movies you haven't rated with `-x myrating`.
 
@@ -154,7 +154,7 @@ So for one final example, say you want to know who is the writer that you've rat
 
 `python mprint.py -x myrating -g myrating -s watched -m 3 writer movies.json`
 
-Note: sorting by the date you watched the movies actually sorts by the date they were added to your IMDb list. So it's more akin to the 'list order' option on IMDb.
+Note: sorting by the date you watched the movies actually sorts by the date they were added to your IMDb list. So it's more akin to the "list order" option on IMDb.
 
 ## mup
 
@@ -172,15 +172,15 @@ For example, I have a list of all the movies I've watched on IMDb, and one for s
 
 mup will: 
 
-1. Download my movies and shows lists from IMDb as CSVs, and place these CSVs in the movies directory under the names 'movies.csv', 'shows.csv'
-2. Run mfetch to download additional data, producing two JSONs (also in the movies directory): 'movies.json' and 'shows.json'
-3. Create four directories in the movies directory for me named 'movies', 'shows', 'all', and 'rated'. These are my categories. Each of these directories includes mprint output for every crew type in files named: 'cast.txt', 'director.txt', 'writer.txt', etc. The 'movies' category includes only people who were in movies. The 'shows' directory is only for people from the shows. The 'all' category is for movies and shows combined. The 'rated' category includes everyone but only from movies/shows that I've rated
+1. Download my movies and shows lists from IMDb as CSVs, and place these CSVs in the movies directory under the names "movies.csv", "shows.csv"
+2. Run mfetch to download additional data, producing two JSONs (also in the movies directory): "movies.json" and "shows.json"
+3. Create four directories in the movies directory for me named "movies", "shows", "all", and "rated". These are my categories. Each of these directories includes mprint output for every crew type in files named: "cast.txt", "director.txt", "writer.txt", etc. The "movies" category includes only people who were in movies. The "shows" directory is only for people from the shows. The "all" category is for movies and shows combined. The "rated" category includes everyone but only from movies/shows that I've rated
 
-The movies directory (not to be confused with the directory for the category 'movies') will end up looking like this:
+The movies directory (not to be confused with the directory for the category "movies") will end up looking like this:
 
 ![image](https://user-images.githubusercontent.com/30209851/187076736-664562c6-c952-4594-80ea-9c6817213e48.png)
 
-And the 'all', 'movies', 'shows', 'rated' directories will all look like this (but with different file contents):
+And the "all", "movies", "shows", "rated" directories will all look like this (but with different file contents):
 
 ![image](https://user-images.githubusercontent.com/30209851/186733395-d31d1456-2f78-42f7-a77f-1013d648efac.png)
 
@@ -192,7 +192,7 @@ In order to automatically export your list to CSV, mup needs to request a URL fr
 
 ### Configuration
 
-First, you should create an empty directory to use as the movies directory. Mine is in the documents folder and is simply called 'movies'.
+First, you should create an empty directory to use as the movies directory. Mine is in the documents folder and is simply called "movies".
 
 Next, you need to create some environment variables. Fill in the right values for these variables and add them to your bashrc (if you're using Bash):
 
@@ -202,7 +202,7 @@ export MOVIES_FDIR="path/to/firefox" # Path to the firefox installation *directo
 export MOVIES_FDOWNLOADS=~/Downloads # Path to where Firefox downloads files
 ```
 
-Next, create a file named **exactly** 'mconfig.txt' in your movies directory. This is where you define your lists and categories. Here's a complete mconfig for example:
+Next, create a file named **exactly** "mconfig.txt" in your movies directory. This is where you define your lists and categories. Here's a complete mconfig for example:
 
 ```
 L movies 123456789 Y
@@ -222,9 +222,9 @@ Every line in the mconfig defines either a list or a category. Lines which defin
 
 `L <list-name> <list-id> <default?>`
 
-`<list-name>` is a name you want to give your list. When I run `bash mup.sh movies`, mup looks for a list with the name movies in my mconfig, and the files it creates for this list get named 'movies.csv', 'movies.json'. This field only supports alphanumeric characters and underscores, and is case-insensitive.
+`<list-name>` is a name you want to give your list. When I run `bash mup.sh movies`, mup looks for a list with the name movies in my mconfig, and the files it creates for this list get named "movies.csv", "movies.json". This field only supports alphanumeric characters and underscores, and is case-insensitive.
 
-`<list-id>` is the ID given to your list by IMDb (the IDs in this example are made up). You can find out your list's ID by opening it up in the browser. The URL of the list page should look like this: `imdb.com/list/ls123456789`. Whatever number it says there instead of '123456789' is your list's ID. mup needs to know this ID in order to export your list to CSV.
+`<list-id>` is the ID given to your list by IMDb (the IDs in this example are made up). You can find out your list's ID by opening it up in the browser. The URL of the list page should look like this: `imdb.com/list/ls123456789`. Whatever number it says there instead of "123456789" is your list's ID. mup needs to know this ID in order to export your list to CSV.
 
 You can actually run `bash mup.sh 123456789` directly to download this list and create a category for it even if it's not in your mconfig. But it's easier to memorize a name and naming it lets you include it in cool categories.
 
@@ -234,11 +234,11 @@ Now let's talk about categories. A category definition looks like this:
 
 `C <category-name> <mprint-options> <lists>`
 
-`<category-name>` is the name of the category. The fact that I have a category 'home' means that mup will produce a directory 'home' for all this category's files. Like list names, this can only contain alphanumeric characters and underscores, and is case-insensitive.
+`<category-name>` is the name of the category. The fact that I have a category "home" means that mup will produce a directory "home" for all this category's files. Like list names, this can only contain alphanumeric characters and underscores, and is case-insensitive.
 
-`<mprint-options>` is a **comma-delimited** list of options to pass to mprint. For example, the 'rated' category is for all the movies and shows I've watched, but only the ones I rated. It does this by passing `-x myrating` to mprint. If you don't want to pass any options to mprint, set this to `-`.
+`<mprint-options>` is a **comma-delimited** list of options to pass to mprint. For example, the "rated" category is for all the movies and shows I've watched, but only the ones I rated. It does this by passing `-x myrating` to mprint. If you don't want to pass any options to mprint, set this to `-`.
 
-`<lists>` is a **comma-delimited** list of list names that are combined to form this category. The 'all' category from above is for movies and shows combined. The 'dvds' category includes only movies from the 'dvds' list. When you run mup to download some lists, mup automatically updates only the categories which depend on them. This field is case-insensitive, like list names.
+`<lists>` is a **comma-delimited** list of list names that are combined to form this category. The "all" category from above is for movies and shows combined. The "dvds" category includes only movies from the "dvds" list. When you run mup to download some lists, mup automatically updates only the categories which depend on them. This field is case-insensitive, like list names.
 
 You can add as many spaces/tabs as you want between fields in this file, but spaces are not allowed within a field. Not even in quotes! Quotes have no special meaning here. You must also not leave any field empty, which is why empty `<mprint-options>` is actually indicated by a `-`.
 
@@ -285,7 +285,7 @@ Or any other pattern which matches any part of his entry. Notice that the patter
 
 The use of `|` in the pattern ensures that it will work no matter which movie came first.
 
-You can actually include the newline character in the pattern. But the pattern does **not** accept escape sequences like '\n'. Escape sequences have the same behavior as egrep. To match a newline, you need to actually have a newline character in the string, which in Bash you can insert with `$'\n'`. However, it's a lot easier to fill in the gap between lines with a simple wildcard like `.*`, as you can see above.
+You can actually include the newline character in the pattern. But the pattern does **not** accept escape sequences like `\n`. Escape sequences have the same behavior as egrep. To match a newline, you need to actually have a newline character in the string, which in Bash you can insert with `$'\n'`. However, it's a lot easier to fill in the gap between lines with a simple wildcard like `.*`, as you can see above.
 
 mgrep searches in a category of your choice, and prints all the people from any crew type who match the pattern in this category. Say I want to find all the people from movies I own at home who were in *The Lord of the Rings: The Fellowship of the Ring* and have an average rating of at least 8.6 and less than 8.8. Then I'll do:
 
@@ -349,7 +349,7 @@ You can also limit searches to certain files. Say you want to find George Lucas'
 
 `bash mgrep.sh -l home "george lucas" writer director`
 
-What's happening here is that mgrep will only look for George Lucas in the files 'writer.txt', 'director.txt' in the category 'home'. The '.txt' can be optionally omitted so you can simply write crew types. You can also give mgrep a full path to a file even outside of any category, like:
+What's happening here is that mgrep will only look for George Lucas in the files "writer.txt", "director.txt" in the category "home". The ".txt" can be optionally omitted so you can simply write crew types. You can also give mgrep a full path to a file even outside of any category, like:
 
 `bash mgrep.sh "george lucas" ~/Desktop/cast.txt`
 
@@ -363,9 +363,9 @@ There's lots of options to control the output of mgrep, many of which are borrow
 
 ## What Else is Included?
 
-The repository also includes two additional scripts I haven't talked about: 'options.sh' and 'utils.sh'. These are just Bash libraries I wrote to use in my scripts. mup and mgrep depend on them, so you get to have them as a bonus. You could even use them in your own scripts.
+The repository also includes two additional scripts I haven't talked about: "options.sh" and "utils.sh". These are just Bash libraries I wrote to use in my scripts. mup and mgrep depend on them, so you get to have them as a bonus. You could even use them in your own scripts.
 
-options is a wrapper around getopts with a focus on brevity and easily generating a useful `-h` option.
+options is a wrapper around [getopts](https://en.wikipedia.org/wiki/Getopts) with a focus on brevity and easily generating a useful `-h` option.
 
 utils is just a collection of handy functions. Some of them are unrelated to mscripts.
 
@@ -373,26 +373,28 @@ utils is just a collection of handy functions. Some of them are unrelated to msc
 
 Just clone this repository and you can run the scripts. I recommend adding their folder to PATH. There are some dependencies you'll need to install, listed here:
 
-* Python, for mfetch and mprint. I don't know exactly what minimum version you need. It's best to go with something recent. I'm using 3.9.7
+* [Python](https://www.python.org/), for mfetch and mprint. I don't know exactly what minimum version you need. It's best to go with something recent. I'm using 3.9.7
 * [Cinemagoer](https://cinemagoer.github.io/), for mfetch. You can simply `pip install cinemagoer`
-* Bash, for mup and mgrep. Again, use something recent, I don't know minimum versions. I'm on Bash 4.4.23
-* GNU Coreutils (`grep`, `find`, `sed`, `mv`, `mktemp`, etc.), for mup and mgrep
-* Firefox, for mup
-
-If you're on Linux, you probably already have Bash and all the GNU Coreutils. If you're on Windows like me, you'll need to install them. I use mingw-w64, which I've installed through [MSYS2](https://www.msys2.org/). Git also comes bundled with Bash and some utils, which I think is sufficient and is certainly easier to install.
+* [Firefox](https://www.mozilla.org/en-US/firefox/new/), for mup
+* Bash & GNU Coreutils (`grep`, `find`, `sed`, `mv`, `mktemp`, etc.), for mup and mgrep. Again, I don't know minimum versions. I'm on Bash 4.4.23. If you're on Linux, you probably already have these. If you're on Windows like me, you'll need to install them. I use [mingw-w64](https://www.mingw-w64.org/), which I've installed through [MSYS2](https://www.msys2.org/). [Git](https://git-scm.com/downloads) also comes bundled with Bash and some utils, which I think is sufficient and certainly easier to install.
 
 ## Notes
 
 * I'm on Windows, but I use Bash the GNU Coreutils ported over by MinGW. I think everything here should work on Linux, but I haven't tested it
 * I constantly get ideas for new features and I can't help myself so there'll probably be updates
-* All the example commands above start with `python` or `bash` e.g. `python mfetch.py`, or `bash mup.sh`. In reality, I never run them like that. All the scripts have shebangs so depending on your environment you may be able to simply run `mprint.py`, `mup.sh`
-* Even just typing `mup.sh` can be a pain. It would be a lot nicer if you could simply type `mup` and that's it. On Linux I understand the custom is to get rid of the extension in filenames of executables. I don't like that though, so instead I have a `command_not_found_handle` in my bashrc which lets me omit them when running shell scripts. Bash treats functions named `command_not_found_handle` specially and runs them when a command isn't found:
+* All the example commands above start with `python` or `bash` e.g. `python mfetch.py`, or `bash mup.sh`. In reality, I never run them like that. All the scripts have [shebangs](https://en.wikipedia.org/wiki/Shebang_(Unix)) so depending on your environment you may be able to simply run `mprint.py`, `mup.sh`
+* Even just typing `mup.sh` can be a pain. It would be a lot nicer if you could simply type `mup` and that's it. I have this `command_not_found_handle` in my bashrc which lets me omit the file extensions in command names:
 
 ```bash
 command_not_found_handle() {
     unset -f command_not_found_handle
-    local cmmnd="$1.sh"
-    shift
-    exec "$cmmnd" "$@"
+    cmmnd="$(compgen -c -- "$1" | command head -n 1)"   # Try to autocomplete the command, pick the first result.
+    if [[ "$cmmnd" == "$1".* ]]; then                   # If the only thing that was autocompleted was the extension, execute it.
+        shift
+        exec "$cmmnd" "$@"
+    else
+        echo "bash: '$1': command not found" >&2
+        return 127
+    fi
 }
 ```
