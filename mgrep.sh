@@ -19,9 +19,9 @@
 ## WHERE indicates a .txt file output by mprint. Supports (in order of precedence):
 ## 1. '-' for standard input (so you can pipe mprint into mgrep)
 ## 2. Absolute paths, paths relative to the current directory
-## 3. Paths relative to the category directory
+## 3. Paths relative to the lookup category
 ## In all forms the .txt extension can optionally be omitted. All forms are case-sensitive.
-## If no WHERE provided, searches all .txt files in the category directory.
+## If no WHERE provided, searches all .txt files in the lookup category.
 
 scripts="$(dirname "$0")"
 source "$scripts"/options.sh
@@ -68,7 +68,7 @@ take_opt() {
         c) ## Configuration file for lists and categories. Defaults to '<movies-dir>/mconfig.txt', where <movies-dir> is the directory you modify with -m.
             config="$(path "$2")"
             ;;
-        l) ## Category directory name which is present in the movies directory. only the basename, not an absolute or relative path. Defaults to the first category in the configuration file.
+        l) ## Lookup category for relative path arguments. Only the basename of the category's directory, not an absolute or relative path. Defaults to the first category in the configuration file.
             category="$2"
             ;;
     esac
@@ -101,7 +101,7 @@ get_catdir() {
     return 0
 }
 
-get_catdir || echo "WHERE arguments relative to the category directory will not work because the directory could not be determined" >&2
+get_catdir || echo "WHERE arguments relative to the lookup category will not work because the directory could not be determined" >&2
 
 if (( $# == 0 )); then
     # Nothing to do here if there are no args and no defaults.

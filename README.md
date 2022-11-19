@@ -388,13 +388,17 @@ Just clone this repository and you can run the scripts. I recommend adding their
 ```bash
 command_not_found_handle() {
     unset -f command_not_found_handle
-    cmmnd="$(compgen -c -- "$1" | command head -n 1)"   # Try to autocomplete the command, pick the first result.
-    if [[ "$cmmnd" == "$1".* ]]; then                   # If the only thing that was autocompleted was the extension, execute it.
-        shift
-        exec "$cmmnd" "$@"
-    else
-        echo "bash: '$1': command not found" >&2
-        return 127
-    fi
+
+    # Iterate over possible autocompletions.
+    while IFS='' read -r cmmnd; do
+        # If the only thing that was autocompleted was the extension, execute it.
+        if [[ "$cmmnd" == "$1".* ]]; then
+            shift
+            exec "$cmmnd" "$@"
+        fi
+    done < <(compgen -c "$1") # Generate possible autocompletions for the command.
+    
+    echo "bash: '$1': command not found" >&2
+    return 127
 }
 ```
