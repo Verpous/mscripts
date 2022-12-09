@@ -371,7 +371,7 @@ mbrowse is a tool that I wrote to help me pick what to watch. It's a python scri
 
 `python mbrowse.py mubi`
 
-I'll get this output (in the terminal I utilize colors to greatly improve readability, but I can't show that here):
+I'll get this output:
 
 ```
 Title                         Days Left  Runtime  Release  Rating  Metascore  Directors                       
@@ -404,14 +404,16 @@ Once Upon a Time in Anatolia  -          2:37     2011     7.8     82         Nu
 Drive My Car                  -          2:59     2021     7.6     91         Ryûsuke Hamaguchi               
 ```
 
+In the terminal I utilize colors to greatly improve readability, but I can't show that here.
+
 The command above is the same as `python mbrowse.py mubi.json`, and the same as `python mbrowse.py "$MOVIES_DIR"/mubi.json`. mbrowse lets you omit the ".json" extension, and it automatically looks in the directory described by the MOVIES_DIR environment variable if it is defined, so you can run it from anywhere.
 
 IMDb is already capable of letting you sort lists and browse them, but there are some things mbrowse lets you do that IMDb can't:
 
 1. More sort options: mbrowse lets you sort by the date that the movie is leaving the streaming service, so you can catch them before they're gone. More on that later
-2. Power: by having your IMDb lists in the terminal, you can pipe them into powerful tools like grep, awk, etc. and get more out of them
-3. Speed: IMDb's website is slow, mbrowse will show you your list in a fraction of a second, right in the terminal
-4. Multiple lists: you can maintain separate watchlists for Netflix, MUBI, or wherever you catch your films, and browse them separately or combined
+2. Multiple lists: you can maintain separate watchlists for Netflix, MUBI, or wherever you catch your films, and browse them separately or combined
+3. Speed: IMDb's website is slow. mbrowse will show you your list in a fraction of a second, right in the terminal
+4. Power: by having your IMDb lists in the terminal, you can pipe them into powerful tools like grep, awk, etc. and do cool things
 
 ### Days Left
 
