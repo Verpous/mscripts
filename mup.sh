@@ -14,9 +14,17 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
+
 ## Fetches imdb lists and updates the local json store for them and the resulting category files.
-## LIST is either a list name as defined in the configuration file, or an IMDb list ID (everything is case-insensitive).
+## LIST is case-insensitive and can be either:
+## 1. A list name as defined in the configuration file
+## 2. An IMDb list ID
+## 3. The string '*', which expands to every configured list name. You should quote this argument if you use it.
 ## Can pull several lists at once. If no LIST provided, downloads lists marked as default in the configuration.
+
+# TODO: Add -C option which reinterprets LISTs as categories and:
+# * if '-f' is not set, it acts as though you ran mup on the categories' dependencies.
+# * if '-f' is set, it only generates the requested categories.
 
 scripts="$(dirname "$0")"
 source "$scripts"/options.sh
@@ -33,21 +41,22 @@ default_downloads=~/Downloads # Tilde expansion won't happen if we write this st
 downloads="$(path "${MOVIES_FDOWNLOADS:-$default_downloads}")"
 popts=()
 dopts=()
-take_opt() {
+handle_option() {
     case "$1" in
         o) ## Disable optimizations that may cause the script to not function as expected.
+           ##> Use this if you notice your category wasn't re-generated despite being different from last time.
             do_optimize=false
             ;;
-        m) ## The movies directory. This is where output is placed. Defaults to MOVIES_DIR env variable, or the current directory if it doesn't exist.
+        m) ## DIR ## The movies directory. This is where output is placed. Defaults to MOVIES_DIR env variable, or the current directory if it doesn't exist.
             mdir="$(path "$2")"
             ;;
-        c) ## Configuration file for lists and categories. Defaults to '<movies-dir>/mconfig.txt', where <movies-dir> is the directory you modify with -m.
+        c) ## FILE ## Configuration file for lists and categories. Defaults to '<movies-dir>/mconfig.txt', where <movies-dir> is the directory you modify with -m.
             config="$(path "$2")"
             ;;
-        b) ## Directory where Firefox is installed on your computer. Defaults to MOVIES_FDIR env variable, or '$PROGRAMFILES/Mozilla Firefox/' if it doesn't exist.
+        b) ## DIR ## Directory where Firefox is installed on your computer. Defaults to MOVIES_FDIR env variable, or '$PROGRAMFILES/Mozilla Firefox/' if it doesn't exist.
             fdir="$(path "$2")"
             ;;
-        d) ## The downloads directory used by Firefox. Defaults to MOVIES_FDOWNLOADS env variable, or '~/Downloads' if it doesn't exist.
+        d) ## DIR ## The downloads directory used by Firefox. Defaults to MOVIES_FDOWNLOADS env variable, or '~/Downloads' if it doesn't exist.
             downloads="$(path "$2")"
             ;;
         f) ## Skip the step where mfetch is run to update the local JSONs. Use the JSONs that already exist in the movies directory.
@@ -56,18 +65,19 @@ take_opt() {
         p) ## Skip the step where mprint is run to generate new category files. Only update the local JSONs.
             do_gen=false
             ;;
-        F) ## Comma-delimited options to pass to mfetch. DON'T pass -u/--update here.
-            readarray -td , dopts < <(echo -n "$2")
+        F) ## OPTS ## Semicolon-delimited options to pass to mfetch. DON'T pass -u/--update here. Don't forget to escape/quote the semicolons!
+            readarray -td \; dopts < <(echo -n "$2")
             ;;
-        P) ## Comma-delimited options to pass to mprint. DON'T pass -p here, and -G is not recommended. It's your responsibility to ensure this doesn't conflict with the category mprint options.
-            readarray -td , popts < <(echo -n "$2")
+        P) ## OPTS ## Semicolon-delimited options to pass to mprint. DON'T pass -p here, and -G is not recommended.
+           ##> It's your responsibility to ensure this doesn't conflict with the category mprint options.
+            readarray -td \; popts < <(echo -n "$2")
             ;;
     esac
 }
 
-options::init fpom:c:b:d:F:P: "[LIST]..."
-options::getopts take_opt -1
-shift $SHIFT_AMT
+options::init "[LIST]..."
+options::getopts handle_option -1
+shift $OPTIONS_SHIFT
 
 [[ -d "$mdir" && -w "$mdir" ]] || utils::error "Movies directory '$mdir' doesn't exist or you do not have permissions for it"
 [[ -d "$fdir" ]] || utils::error "Firefox installation directory '$fdir' doesn't exist"
@@ -81,12 +91,13 @@ declare -A cat_popts=()
 declare -A cat_lists=()
 namei=0
 
+# This is where we parse the mconfig.
 if [[ -f "$config" && -r "$config" ]]; then
     while IFS='' read -r line; do
         case "$line" in
             # We restrict fields to a set of characters that we know we can safely work with.
             # We don't even have to quote them, but we'll still try our best.
-            ?(\ )[lL]\ +([[:word:]])\ +([[:word:]])\ +([[:word:],])?(\ ))
+            ?(\ )[lL]\ +([[:word:]])\ +([[:word:]])\ +([[:word:]])?(\ ))
                 IFS=' ' read -r t lname lid default < <(echo -n "$line")
                 lname="${lname,,}"
                 list_ids["$lname"]="$lid"
@@ -95,7 +106,7 @@ if [[ -f "$config" && -r "$config" ]]; then
                 # This is so that if you have two lists with the same name, the later one overwrites the earlier one.
                 [[ "$default" == [Yy]* ]] && default_lists["$lname"]=1 || unset default_lists["$lname"]
                 ;;
-            ?(\ )[cC]\ +([[:word:]])\ +([!\ ])\ +([[:word:],])?(\ ))
+            ?(\ )[cC]\ +([[:word:]])\ +([!\ ])\ +([[:word:]\;])?(\ ))
                 IFS=' ' read -r t cname cpopts_str clists_str < <(echo -n "$line")
                 cname="${cname,,}"
                 # Bash doesn't support nested arrays so cat_popts and cat_lists actually hold references to arrays.
@@ -103,8 +114,8 @@ if [[ -f "$config" && -r "$config" ]]; then
                 cat_lists["$cname"]=mup_var$(( namei++ ))
                 declare -n cpopts="${cat_popts[$cname]}"
                 declare -n clists="${cat_lists[$cname]}"
-                [[ "$cpopts_str" == '-' ]] && cpopts=() || readarray -td , cpopts < <(echo -n "$cpopts_str")
-                readarray -td , clists < <(echo -n "${clists_str,,}")
+                [[ "$cpopts_str" == '-' ]] && cpopts=() || readarray -td \; cpopts < <(echo -n "$cpopts_str")
+                readarray -td \; clists < <(echo -n "${clists_str,,}")
                 ;;
             ?(\ )) # Empty lines are allowed and ignored.
                 ;;
@@ -189,8 +200,12 @@ fetch() {
 
 # Similar trick to what we did with default_lists,
 # an associative array where we only care about the keys is the easiest way to define a set in bash (i.e., list w/o duplicates).
-declare -A gen_cats=() 
-readarray -d '' uniqlists < <(printf "%s\0" "$@" | tr [:upper:] [:lower:] | sort -uz)
+declare -A gen_cats=()
+
+# Adding all list names to the array of lists we want to fetch if '*' is in the arguments,
+# then removing duplicate list names.
+utils::contains '*' "$@" && uniqlists=("${!list_ids[@]}") || uniqlists=()
+readarray -d '' -O ${#uniqlists[@]} uniqlists < <(printf "%s\0" "$@" | grep -Fxzv '*' | tr [:upper:] [:lower:] | sort -uz)
 
 # We build a pattern that only matches against valid list names. This doesn't work if list_ids is empty,
 # so in that case we'll create a pattern that matches nothing.

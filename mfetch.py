@@ -18,19 +18,24 @@
 import json
 import csv
 import sys
-import glob
 import os
 import argparse
 import re
-from imdb import Cinemagoer, IMDbError
-from imdb.utils import RolesList
-from imdb.Person import Person
-from imdb.Character import Character
-from imdb.Movie import Movie
+from collections import namedtuple
+
+try:
+    from imdb import Cinemagoer, IMDbError
+    from imdb.utils import RolesList
+    from imdb.Person import Person
+    from imdb.Character import Character
+    from imdb.Movie import Movie
+except:
+    sys.exit('Failed to import Cinemagoer. You must install it by running "pip install cinemagoer"')
 
 maxdesc = 20
 barlen = 30
 maxsuff = 50
+CsvFields = namedtuple('CsvFields', ['iden', 'title', 'wdate', 'rdate', 'myrating', 'description', 'runtime'])
 
 def progbar(desc, count, total, suffix=None):
     if quiet:
@@ -43,17 +48,21 @@ def progbar(desc, count, total, suffix=None):
     suffstr = ' ' * maxsuff if suffix == None else (suffix if len(suffix) <= maxsuff else (suffix[:maxsuff - 3] + '...')).ljust(maxsuff)
     print(f'{(desc + ":").ljust(maxdesc)} [{fillstr}] {fracstr} {suffstr}', end='\n' if count == total else '\r')
 
-sys.stdout.reconfigure(encoding='utf-8', newline='\n')
+try:
+    sys.stdout.reconfigure(encoding='utf-8', newline='\n')
+except:
+    pass
 
 parser = argparse.ArgumentParser(
-    description='Give this an export of an IMDb list and it will output a JSON with additional data about the movies in the list')
+    formatter_class=argparse.RawTextHelpFormatter,
+    description='Give this an export of an IMDb list and it will output a JSON with additional data about the movies in the list.')
 parser.add_argument('-u', default=False, action='store_true', help=
     'The program will only fetch movies not already present in the output JSON')
 parser.add_argument('--update', metavar='JSON', default=None, action='store', help=
     'Like -u, but you may specify a different file than the output JSON to compare against. This option overrides -u')
 parser.add_argument('-f', '--force', metavar='PATTERN', default=None, action='store', help=
-    '''If -u/--update specified, forces titles that match PATTERN (case-insensitive) to be redownloaded even if they are already in the update JSON.
-Intended for redownloading shows after a new season has come out.
+    'If -u/--update specified, forces titles that match PATTERN (case-insensitive) to be redownloaded even if they are already in the update JSON.'
+    ''' Intended for redownloading shows after a new season has come out.
 PATTERN uses regex syntax from python's re library, which is identical to egrep unless you use very advanced features''')
 parser.add_argument('-m', '--max', metavar='NUM', type=int, default=0x7FFFFFFF, action='store', help=
     'Specify how many movies to fetch. Mainly for debugging. Defaults to unbounded')
@@ -90,7 +99,7 @@ update_mode = upfile != None and os.path.exists(upfile)
 if upfile != None and not update_mode:
     print(f'File \'{upfile}\' doesn\'t exist. Ignoring -u/--update args.', file=sys.stderr)
 
-# Building a list of (id, watch date, release date, my rating) for every movie.
+# Building a list of CsvFields (id, watch date, release date, my rating) for every movie.
 # Obviously we need the id from the csv in order to know what to download.
 # But we are also interested in the watch date which is only in the csv,
 # and the release date which is obtainable from Cinemagoer but easier through the csv (trust me).
@@ -105,7 +114,7 @@ with sys.stdin if csvfile == '-' else open(csvfile, 'r', newline='') as f:
             continue
 
         progbar("Reading CSV", i - 1, reader.line_num - 1)
-        all_csv_data.append((row[1][2:], row[5], row[2], row[13], row[15] if has_myrating else ''))
+        all_csv_data.append(CsvFields(row[1][2:], row[5], row[2], row[13], row[15] if has_myrating else '', row[4], row[9]))
 
     progbar("Reading CSV", reader.line_num - 1, reader.line_num - 1)
 
@@ -126,7 +135,7 @@ if update_mode:
     no_redownload_ids = [movie['imdbID'] for movie in in_json['movies'] if movie['imdbID'] not in force_ids]
 
     # Creating list of what we want to download by excluding the ones we don't.
-    csv_data = [(iden, title, wdate, rdate, myrating) for iden, title, wdate, rdate, myrating in all_csv_data if iden not in no_redownload_ids]
+    csv_data = [fields for fields in all_csv_data if fields.iden not in no_redownload_ids]
 else:
     csv_data = all_csv_data
 
@@ -138,19 +147,19 @@ direct_keys = [('imdbID', 'N/A'), ('title', 'N/A'), ('rating', -1), ('metascore'
 people_keys = ['cast', 'director', 'writer', 'producer', 'composer', 'cinematographer', 'editor', 'stunt performer']
 ia = Cinemagoer()
 
-# Building a list of (IMDb movie object, wdate, rdate).
+# Building a list of Cinemagoer movie objects for the downloaded movies.
 movies = list()
 info = (*Movie.default_info, 'critic reviews', 'full credits')
 exit_early = None
 
-for i, (iden, title, wdate, rdate, myrating) in enumerate(csv_data):
-    progbar("Downloading", i, len(csv_data), suffix=title)
+for i, fields in enumerate(csv_data):
+    progbar("Downloading", i, len(csv_data), suffix=fields.title)
     success = False
 
     # Errors are rather common and usually trying again works.
     for j in range(5):
         try:
-            movie = ia.get_movie(iden, info=info)
+            movie = ia.get_movie(fields.iden, info=info)
             movies.append(movie)
             success = True
             break
@@ -213,7 +222,7 @@ for i, movie in enumerate(movies):
     json_movie = dict()
     json_movie.update({ key: get(movie, key, default) for key, default in direct_keys })
     # These keys will be added later, but I want them to appear before the crew keys in the file so we need to add them now too.
-    json_movie.update({ 'myrating': None, 'watched': None, 'released': None })
+    json_movie.update({ 'myrating': None, 'watched': None, 'released': None, 'description': None, 'runtime': None })
     json_movie.update({ key: json_people(movie, key) for key in people_keys })
     json_movies.append(json_movie)
 
@@ -221,27 +230,33 @@ progbar("Building JSON", len(movies), len(movies))
 
 # In update mode, appending movies from the input JSON except the ones which have been removed from the list or that were force redownloaded.
 if update_mode:
-    append_ids = [iden for iden, title, wdate, rdate, myrating in all_csv_data if iden not in force_ids]
+    append_ids = [fields.iden for fields in all_csv_data if fields.iden not in force_ids]
     json_movies += [movie for movie in in_json['movies'] if movie['imdbID'] in append_ids]
 
 # For data that we pull from the CSV, we'll update even movies that are skipped by update mode.
 # This is because it doesn't cost us anything, and because one of the values is my rating,
 # which can change so a movie which was already previous fetched may need to be updated.
-for i, (iden, title, wdate, rdate, myrating) in enumerate(all_csv_data):
+for i, fields in enumerate(all_csv_data):
     progbar("Adding CSV data", i, len(all_csv_data))
-    json_movie = next((m for m in json_movies if m['imdbID'] == iden), None)
+    json_movie = next((m for m in json_movies if m['imdbID'] == fields.iden), None)
 
     # The only time it can be None is if the download phase got cut short due to an error.
     if json_movie != None:
-        json_movie.update({ 'myrating': myrating, 'watched': wdate, 'released': rdate })
+        json_movie.update({
+            'myrating': fields.myrating,
+            'watched': fields.wdate,
+            'released': fields.rdate,
+            'description': fields.description,
+            'runtime': fields.runtime,
+            })
 
 progbar("Adding CSV data", len(all_csv_data), len(all_csv_data))
 
 # There seems to be a bug in Cinemagoer, sometimes when you get a person from the cast list of a TV show,
-# His name goes something like "2011 Alan Tudyk\n          \n          \n          \n          1 episode"
+# his name goes something like "2011 Alan Tudyk\n          \n          \n          \n          1 episode".
 # We fix this by trying to find people with a name like that and replacing it with the correct name.
 # By doing this after everything is downloaded and not when the name was added to the dictionary,
-# we are able to optimize by using the name person's appearance in something else instead of doing the big download when possible.
+# we are able to optimize by using the same person's appearance in something else instead of doing the big download when possible.
 def bad_name(person):
     name = person['name']
     return '\n' in name or ' episode' in name.lower()

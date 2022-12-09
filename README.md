@@ -5,17 +5,19 @@
   - [mfetch](#mfetch)
   - [mprint](#mprint)
   - [mup](#mup)
-    - [mup & Firefox](#mup--firefox)
+    - [mup \& Firefox](#mup--firefox)
     - [Configuration](#configuration)
     - [Options](#options)
   - [mgrep](#mgrep)
+  - [mbrowse](#mbrowse)
+    - [Days Left](#days-left)
   - [What Else is Included?](#what-else-is-included)
   - [Installation](#installation)
   - [Notes](#notes)
 
-This is a set of tools I wrote to answer questions I had about the movies I've watched. Using mscripts, you can quickly answer questions like "where else have I seen this actor?", "what's the director I've seen the most movies from?", "what's the full list of writers who wrote a Star Wars film?", and many others.
+This is a set of tools I wrote to squeeze all the juice out of my IMDb lists, right from the command line. Using mscripts, you can quickly answer questions like "where else have I seen this actor?", pick what movie to watch tonight, and more.
 
-All the tools are command line tools. To use their full power, you need to be comfortable with this. If you're not, there's only a single 3-letter command you need to remember in order to still make good use of them.
+All the tools are command line tools. To use their full power, you need to be comfortable with this. If you're not, there's only a single 3-letter command you need to remember to still make good use of them.
 
 ## Description
 
@@ -80,7 +82,7 @@ Samuel L. Jackson:
 
 What you're seeing here is a few of the actors who've been in movies I own on DVD, sorted by how many of those movies they've been in. This snippet only includes the top few. For every actor, it shows all the movies from my "owned on DVD" list that they've been in sorted by release date, their roles in those movies, and the average rating and metascore of those movies.
 
-You can create lists like this for various types of crew: cast, directors, writers, composers, producers, cinematographers, and stunt cast. You can also control sorting options: you can sort movies by their release date, the date you watched them, their rating by IMDb users, their rating by you, their metascore, or alphabetically. You can sort people too, by their average user rating, your rating, or metascore, by the number of movies they've been in from the list, alphabetically, or by the number of people in the group (more on that later). You can also apply a filter to only see movies that you rated.
+You can create lists like this for various types of crew: cast, directors, writers, composers, producers, cinematographers, and stunt cast. You can also control sorting options: you can sort movies by their release date, the date you watched them, their IMDb rating, and more. You can sort people too, by the average metascore of their movies, the number of movies they've been in from the list, etc. You can also apply a filter, like only including movies that you rated.
 
 Once these files are generated, you can either open them in a text editor and have a look, or you can quickly look up stuff in them using mgrep.
 
@@ -174,7 +176,7 @@ mup will:
 
 1. Download my movies and shows lists from IMDb as CSVs, and place these CSVs in the movies directory under the names "movies.csv", "shows.csv"
 2. Run mfetch to download additional data, producing two JSONs (also in the movies directory): "movies.json" and "shows.json"
-3. Create four directories in the movies directory for me named "movies", "shows", "all", and "rated". These are my categories. Each of these directories includes mprint output for every crew type in files named: "cast.txt", "director.txt", "writer.txt", etc. The "movies" category includes only people who were in movies. The "shows" directory is only for people from the shows. The "all" category is for movies and shows combined. The "rated" category includes everyone but only from movies/shows that I've rated
+3. Create four directories in the movies directory named "movies", "shows", "all", and "rated". These are my categories. Each of these directories includes mprint output for every crew type in files named: "cast.txt", "director.txt", "writer.txt", etc. The "movies" category includes only people who were in movies. The "shows" directory is only for people from the shows. The "all" category is for movies and shows combined. The "rated" category includes everyone but only from movies/shows that I've rated
 
 The movies directory (not to be confused with the directory for the category "movies") will end up looking like this:
 
@@ -205,17 +207,19 @@ export MOVIES_FDOWNLOADS=~/Downloads # Path to where Firefox downloads files
 Next, create a file named **exactly** "mconfig.txt" in your movies directory. This is where you define your lists and categories. Here's a complete mconfig for example:
 
 ```
-L movies 123456789 Y
-L shows 987654321 Y
-L blurays 135792468 N
-L dvds 246813579 N
-C all - movies,shows
-C rated -x,myrating movies,shows
-C home - blurays,dvds
-C movies - movies
-C shows - shows
-C blurays - blurays
-C dvds - dvds
+L  movies   123456789  Y
+L  shows    987654321  Y
+L  blurays  135792468  N
+L  dvds     246813579  N
+L  mubi     864297531  N
+
+C  all      -            movies;shows
+C  rated    -x;myrating  movies;shows
+C  home     -            blurays;dvds
+C  movies   -            movies
+C  shows    -            shows
+C  blurays  -            blurays
+C  dvds     -            dvds
 ```
 
 Every line in the mconfig defines either a list or a category. Lines which define a list are of the form:
@@ -226,7 +230,7 @@ Every line in the mconfig defines either a list or a category. Lines which defin
 
 `<list-id>` is the ID given to your list by IMDb (the IDs in this example are made up). You can find out your list's ID by opening it up in the browser. The URL of the list page should look like this: `imdb.com/list/ls123456789`. Whatever number it says there instead of "123456789" is your list's ID. mup needs to know this ID in order to export your list to CSV.
 
-You can actually run `bash mup.sh 123456789` directly to download this list and create a category for it even if it's not in your mconfig. But it's easier to memorize a name and naming it lets you include it in cool categories.
+You can actually run `bash mup.sh 123456789` directly to download this list and create a category for it even if it's not in your mconfig.
 
 `<default?>` indicates if this list should be downloaded when you run mup without arguments. If it starts with a Y (case-insensitive), that means yes. Any other string means no. With the example above, if I run mup without arguments, only the movies and shows lists get downloaded.
 
@@ -236,9 +240,9 @@ Now let's talk about categories. A category definition looks like this:
 
 `<category-name>` is the name of the category. The fact that I have a category "home" means that mup will produce a directory "home" for all this category's files. Like list names, this can only contain alphanumeric characters and underscores, and is case-insensitive.
 
-`<mprint-options>` is a **comma-delimited** list of options to pass to mprint. For example, the "rated" category is for all the movies and shows I've watched, but only the ones I rated. It does this by passing `-x myrating` to mprint. If you don't want to pass any options to mprint, set this to `-`.
+`<mprint-options>` is a **semicolon-delimited** list of options to pass to mprint. For example, the "rated" category is for all the movies and shows I've watched, but only the ones I rated. It does this by passing `-x myrating` to mprint. If you don't want to pass any options to mprint, set this to `-`.
 
-`<lists>` is a **comma-delimited** list of list names that are combined to form this category. The "all" category from above is for movies and shows combined. The "dvds" category includes only movies from the "dvds" list. When you run mup to download some lists, mup automatically updates only the categories which depend on them. This field is case-insensitive, like list names.
+`<lists>` is a **semicolon-delimited** list of list names that are combined to form this category. The "all" category from above is for movies and shows combined. The "dvds" category includes only movies from the "dvds" list. When you run mup to download some lists, mup automatically updates only the categories which depend on them. This field is case-insensitive, like list names.
 
 You can add as many spaces/tabs as you want between fields in this file, but spaces are not allowed within a field. Not even in quotes! Quotes have no special meaning here. You must also not leave any field empty, which is why empty `<mprint-options>` is actually indicated by a `-`.
 
@@ -361,9 +365,67 @@ By default mgrep searches all crew types in the given category. If you don't spe
 
 There's lots of options to control the output of mgrep, many of which are borrowed from grep. As always you can read more with `-h`.
 
+## mbrowse
+
+mbrowse is a tool that I wrote to help me pick what to watch. It's a python script which takes JSONs output by mfetch and prints the movies in them to the terminal, with nice colors and formatting and many options for how to sort movies and what information to show about them. For instance, I have an IMDb list of my [MUBI](https://mubi.com) watchlist. If I run:
+
+`python mbrowse.py mubi`
+
+I'll get this output (in the terminal I utilize colors to greatly improve readability, but I can't show that here):
+
+```
+Title                         Days Left  Runtime  Release  Rating  Metascore  Directors                       
+Foreign Correspondent         9          2:00     1940     7.5     88         Alfred Hitchcock                
+Sympathy for Mr. Vengeance    9          2:09     2002     7.5     56         Park Chan-wook                  
+Blackmail                     15         1:25     1929     6.9     -          Alfred Hitchcock                
+Lady Vengeance                18         1:55     2005     7.5     75         Park Chan-wook                  
+A Short Film About Killing    21         1:24     1988     8.0     -          Krzysztof Kieslowski            
+A Short Film About Love       21         1:27     1988     8.2     -          Krzysztof Kieslowski            
+The Double Life of Véronique  22         1:38     1991     7.7     86         Krzysztof Kieslowski            
+Silence                       46         2:41     2016     7.1     79         Martin Scorsese                 
+Raging Bull                   226        2:09     1980     8.2     89         Martin Scorsese                 
+Autumn Sonata                 256        1:39     1978     8.1     -          Ingmar Bergman                  
+The Wrestler                  256        1:49     2008     7.9     80         Darren Aronofsky                
+The House That Jack Built     316        2:32     2018     6.8     42         Lars von Trier                  
+Aguirre, the Wrath of God     320        1:35     1972     7.8     -          Werner Herzog                   
+The Handmaiden                348        2:25     2016     8.1     84         Park Chan-wook                  
+The Lady Vanishes             -          1:36     1938     7.8     98         Alfred Hitchcock                
+La haine                      -          1:38     1995     8.1     -          Mathieu Kassovitz               
+Fallen Angels                 -          1:39     1995     7.6     71         Kar-Wai Wong                    
+The Boss of It All            -          1:39     2006     6.6     71         Lars von Trier                  
+Daddy Longlegs                -          1:40     2009     6.9     74         Benny Safdie, Josh Safdie       
+Chungking Express             -          1:42     1994     8.0     78         Kar-Wai Wong                    
+Crimes of the Future          -          1:47     2022     5.9     67         David Cronenberg                
+The Hunt                      -          1:55     2012     8.3     77         Thomas Vinterberg               
+Oldboy                        -          2:00     2003     8.4     77         Park Chan-wook                  
+Nostalghia                    -          2:05     1983     8.0     -          Andrei Tarkovsky                
+Wings of Desire               -          2:08     1987     8.0     79         Wim Wenders                     
+Once Upon a Time in Anatolia  -          2:37     2011     7.8     82         Nuri Bilge Ceylan               
+Drive My Car                  -          2:59     2021     7.6     91         Ryûsuke Hamaguchi               
+```
+
+The command above is the same as `python mbrowse.py mubi.json`, and the same as `python mbrowse.py "$MOVIES_DIR"/mubi.json`. mbrowse lets you omit the ".json" extension, and it automatically looks in the directory described by the MOVIES_DIR environment variable if it is defined, so you can run it from anywhere.
+
+IMDb is already capable of letting you sort lists and browse them, but there are some things mbrowse lets you do that IMDb can't:
+
+1. More sort options: mbrowse lets you sort by the date that the movie is leaving the streaming service, so you can catch them before they're gone. More on that later
+2. Power: by having your IMDb lists in the terminal, you can pipe them into powerful tools like grep, awk, etc. and get more out of them
+3. Speed: IMDb's website is slow, mbrowse will show you your list in a fraction of a second, right in the terminal
+4. Multiple lists: you can maintain separate watchlists for Netflix, MUBI, or wherever you catch your films, and browse them separately or combined
+
+### Days Left
+
+You may have noticed the column there titled "Days Left". The main reason I wrote mbrowse is that I wanted to sort my watchlist by the date the movies were gonna leave MUBI, so this is the default column that mbrowse sorts movies by. Unfortunately, there is no good way to pull information about a movie's leaving date automatically, so to utilize this feature you will need to do some manual work.
+
+First, you need to be using a streaming service that gives you this kind of information at all. I'll use MUBI in this example. Fortunately, there's the website [What's On MUBI](https://whatsonmubi.com/), where I can look up a movie and learn which countries it's available in, and crucially, when the movie is leaving. You need to take the date that the movie is leaving, and add it to the movie's description on your IMDb list **exactly in the format** "Y-m-d". For example: "2023-07-25".
+
+What's On MUBI tells you in how many days the movie is leaving relative to today, not an absolute date. It's kind of a pain to manually do that math, so I included an additional little script to help you. Simply run: `bash when.sh 15` and it will output what the date will be 15 days from now in the correct format.
+
+Both mbrowse and when are capable of more than what I describe here. You can read the full description of what they can do with `-h`.
+
 ## What Else is Included?
 
-The repository also includes two additional scripts I haven't talked about: "options.sh" and "utils.sh". These are just Bash libraries I wrote to use in my scripts. mup and mgrep depend on them, so you get to have them as a bonus. You could even use them in your own scripts.
+The repository also includes two additional scripts I haven't talked about: "options.sh" and "utils.sh". These are just Bash libraries I wrote to use in my scripts. The Bash scripts here depend on them, so you get to have them as a bonus. You could even use them in your own scripts.
 
 options is a wrapper around [getopts](https://en.wikipedia.org/wiki/Getopts) with a focus on brevity and easily generating a useful `-h` option.
 
@@ -373,7 +435,7 @@ utils is just a collection of handy functions. Some of them are unrelated to msc
 
 Just clone this repository and you can run the scripts. I recommend adding their folder to PATH. There are some dependencies you'll need to install, listed here:
 
-* [Python](https://www.python.org/), for mfetch and mprint. I don't know exactly what minimum version you need. It's best to go with something recent. I'm using 3.9.7
+* [Python](https://www.python.org/), for mfetch, mprint, and mbrowse. I don't know exactly what minimum version you need. It's best to go with something recent. I'm using 3.9.7
 * [Cinemagoer](https://cinemagoer.github.io/), for mfetch. You can simply `pip install cinemagoer`
 * [Firefox](https://www.mozilla.org/en-US/firefox/new/), for mup
 * Bash & GNU Coreutils (`grep`, `find`, `sed`, `mv`, `mktemp`, etc.), for mup and mgrep. Again, I don't know minimum versions. I'm on Bash 4.4.23. If you're on Linux, you probably already have these. If you're on Windows like me, you'll need to install them. I use [mingw-w64](https://www.mingw-w64.org/), which I've installed through [MSYS2](https://www.msys2.org/). [Git](https://git-scm.com/downloads) also comes bundled with Bash and some utils, which I think is sufficient and certainly easier to install.
@@ -388,16 +450,19 @@ Just clone this repository and you can run the scripts. I recommend adding their
 ```bash
 command_not_found_handle() {
     unset -f command_not_found_handle
+    found=false
 
     # Iterate over possible autocompletions.
     while IFS='' read -r cmmnd; do
-        # If the only thing that was autocompleted was the extension, execute it.
+        # If the only thing that was autocompleted was the extension, execute it,
+        # but outside the loop because STDIN is redirected inside here.
         if [[ "$cmmnd" == "$1".* ]]; then
-            shift
-            exec "$cmmnd" "$@"
+            found=true
+            break
         fi
     done < <(compgen -c "$1") # Generate possible autocompletions for the command.
-    
+
+    $found && exec "$cmmnd" "${@:2}"
     echo "bash: '$1': command not found" >&2
     return 127
 }

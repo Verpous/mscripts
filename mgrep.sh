@@ -14,6 +14,7 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
+
 ## Prints the full credits of any person whose credits match PATTERN in mprint's output files.
 ## PATTERN is in extended regex (like egrep, grep -E).
 ## WHERE indicates a .txt file output by mprint. Supports (in order of precedence):
@@ -36,12 +37,12 @@ invert=""
 minimal=false
 mdir="$(path "${MOVIES_DIR:-.}")"
 [[ -t 1 ]] && color=true || color=false
-take_opt() {
+handle_option() {
     case "$1" in
         i) ## Turn on case sensitivity for PATTERN. Default is to be case-insensitive.
             casing=""
             ;;
-        C) ## Set color to one of 'always', 'auto', or 'never' (case-insensitive). Defaults to auto.
+        C) ## WHEN ## Set color to one of 'always', 'auto', or 'never' (case-insensitive). Defaults to auto.
             case "${2,,}" in
                 always) color=true;;
                 auto);; # Default, no action needed.
@@ -52,7 +53,7 @@ take_opt() {
         H) ## Don't print the file name for each match.
             fnames=false
             ;;
-        M) ## Stop after ARG matches.
+        M) ## NUM ## Stop after NUM matches.
             { (( nmatches = 10#"$2" )); } &> /dev/null || utils::error "Invalid max count: '$2'"
             limit=true
             ;;
@@ -62,21 +63,21 @@ take_opt() {
         x) ## Exclude full credits, print only people names (PATTERN is still matched against the full credits).
             minimal=true
             ;;
-        m) ## The movies directory. This is the output directory used by mup. Defaults to MOVIES_DIR env variable, or the current directory if it doesn't exist.
+        m) ## DIR ## The movies directory. This is the output directory used by mup. Defaults to MOVIES_DIR env variable, or the current directory if it doesn't exist.
             mdir="$(path "$2")"
             ;;
-        c) ## Configuration file for lists and categories. Defaults to '<movies-dir>/mconfig.txt', where <movies-dir> is the directory you modify with -m.
+        c) ## FILE ## Configuration file for lists and categories. Defaults to '<movies-dir>/mconfig.txt', where <movies-dir> is the directory you modify with -m.
             config="$(path "$2")"
             ;;
-        l) ## Lookup category for relative path arguments. Only the basename of the category's directory, not an absolute or relative path. Defaults to the first category in the configuration file.
+        l) ## CATEGORY ## Lookup category for relative path arguments. Only the basename of the category's directory, not an absolute or relative path.
             category="$2"
             ;;
     esac
 }
 
-options::init iHvxM:C:m:c:l: "PATTERN [WHERE]..."
-options::getopts take_opt 1
-shift $SHIFT_AMT
+options::init "PATTERN [WHERE]..."
+options::getopts handle_option 1
+shift $OPTIONS_SHIFT
 pattern="$1"
 shift
 
@@ -143,12 +144,12 @@ fi
 lastcount=0
 tmpfile="$(mktemp)"
 
-# We need a character that surely won't appear in the file to use as a replacement for newlines.
-ack=$'\x06'
+# We need a character that surely won't appear in the file to use as a temporary replacement for newlines. Unit Separator sounds like a good choice.
+sep=$'\x1F'
 
 # Processing the search pattern a bit to hide implementation details.
-[[ "$pattern" == ^* ]] && pattern="^${ack}${pattern:1}"
-pattern="$(echo -n "$pattern" | tr '\n' "$ack")"
+[[ "$pattern" == ^* ]] && pattern="^${sep}${pattern:1}"
+pattern="$(echo -n "$pattern" | tr '\n' "$sep")"
 
 for loc in "${where[@]}"; do
     # Because we split into one grep call for each file (we have good reasons),
@@ -176,14 +177,14 @@ for loc in "${where[@]}"; do
     # 3. Undo the flattening operation (that is, for the remaining people, restore theirs credits to multi-line)
     # There are complications and also this is a big effin' pipe but don't worry, everything will be explained.
 
-    # Step 1, the flattening. We use ACK and as a temporary replacements for newlines so we can restore them at step 3.
+    # Step 1, the flattening. We use US (Unit Separator) and as a temporary replacements for newlines so we can restore them at step 3.
     # We also get rid of the head of the file up to where it starts listing people.
-    # The first person in the list gets printed a little different, so we inject our own ack in there to make him like the rest.
+    # The first person in the list gets printed a little different, so we inject our own US in there to make him like the rest.
     # The flattened file is stored to a temp file (and also piped on) because we'll need to revisit it if $limit==true.
-    sed -En "s/^$/$ack/;/^[^[:space:]].*:$/,\$p" -- "$infile" | tr "\\n$ack" "$ack\\n" | cat <(echo -n "$ack") - | tee "$tmpfile" |
+    sed -En "s/^$/$sep/ ; /^\S.*:$/,\$p" -- "$infile" | tr "\\n$sep" "$sep\\n" | cat <(echo -n "$sep") - | tee "$tmpfile" |
     # Steps 2 and 3. We match the pattern and then unflatten.
     # We don't restore it exactly to its original form, to achieve prettier output.
-    grep -E --color=$grepcolor $casing $invert $mflag -e "$pattern" | tr -d '\n' | tr "$ack" '\n' |
+    grep -E --color=$grepcolor $casing $invert $mflag -e "$pattern" | tr -d '\n' | tr "$sep" '\n' |
     # There were several bugs as a cause of patterns which match across multiple lines.
     # If lines get deleted, or we try to append the filename before each line, or whatever, it messes up the colors.
     # The solution is an algorithm which finds multi-line color blocks, and turns them into several single-line color blocks.
@@ -208,7 +209,7 @@ for loc in "${where[@]}"; do
         cat
     fi |
     # Deleting the first line for prettier output, and additional ops which depend on options.
-    sed -E "1d;$strip;$op"
+    sed -E "1d ; $strip ; $op"
 
     # This is what we need tmpfile for.
     $limit && lastcount="$(grep -Ec $casing $invert $mflag -e "$pattern" -- "$tmpfile")"

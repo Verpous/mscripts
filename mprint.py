@@ -17,7 +17,6 @@
 
 import json
 import sys
-import glob
 import datetime
 import argparse
 
@@ -36,7 +35,7 @@ class Person:
         return hash(self.iden)
 
 class Movie:
-    def __init__(self, iden, title, rating, metascore, myrating, watched, released, crew):
+    def __init__(self, iden, title, rating, metascore, myrating, watched, released, description, runtime, crew):
         self.iden = iden
         self.title = title
         self.rating = rating
@@ -44,6 +43,8 @@ class Movie:
         self.myrating = myrating
         self.watched = watched
         self.released = released
+        self.description = description
+        self.runtime = runtime
         self.crew = crew
         self.people = frozenset(c.person for c in crew)
 
@@ -74,18 +75,20 @@ def json_to_movie(json_movie, crew_type):
     myrating = int(json_movie['myrating']) if len(json_movie['myrating']) != 0 else -1
     watched = datetime.datetime.strptime(json_movie['watched'], '%Y-%m-%d')
     released = datetime.datetime.strptime(json_movie['released'], '%Y-%m-%d')
+    description = json_movie['description']
+    runtime = int(json_movie['runtime']) if len(json_movie['runtime']) != 0 else -1
     json_crew = json_movie[crew_type]
     crew = [CrewMember(Person(c['id'], c['name']), c['roles']) for c in json_crew]
-    return Movie(iden, title, rating, metascore, myrating, watched, released, crew)
+    return Movie(iden, title, rating, metascore, myrating, watched, released, description, runtime, crew)
 
 def find_index(items, pred):
     return next((i for i, item in enumerate(items) if pred(item)), len(items))
 
 def alias(valid_items, aliases, item):
     aliases.update({ key: key for key in valid_items })
-    with_dash = { key.replace(' ', '-'): value for key, value in aliases.items() if ' ' in key}
-    with_underscore = { key.replace(' ', '_'): value for key, value in aliases.items() if ' ' in key}
-    no_spaces = { key.replace(' ', ''): value for key, value in aliases.items() if ' ' in key}
+    with_dash = { key.replace(' ', '-'): value for key, value in aliases.items() if ' ' in key }
+    with_underscore = { key.replace(' ', '_'): value for key, value in aliases.items() if ' ' in key }
+    no_spaces = { key.replace(' ', ''): value for key, value in aliases.items() if ' ' in key }
     aliases.update(with_dash)
     aliases.update(with_underscore)
     aliases.update(no_spaces)
@@ -95,6 +98,9 @@ def alias(valid_items, aliases, item):
         raise ValueError()
 
     return aliases[item]
+
+def aliases(alias_func, items):
+    return [alias_func(item) for item in str.split(items, sep=',')]
 
 def crew_alias(crew_type):
     aliases = {
@@ -125,6 +131,7 @@ def sort_alias(sort_key):
         'watched date': sk_watched,
         'date watched': sk_watched,
         'nosort': sk_nosort,
+        '': sk_nosort,
         'ratings': sk_rating,
         'critic score': sk_metascore,
         'critic scores': sk_metascore,
@@ -145,6 +152,9 @@ def sort_alias(sort_key):
         'lexicographic': sk_alpha,
         'name': sk_alpha,
         'title': sk_alpha,
+        'length': sk_runtime,
+        'minutes': sk_runtime,
+        'time': sk_runtime,
     }
     return alias(valid_sort_keys, aliases, sort_key)
 
@@ -166,6 +176,7 @@ def gsort_alias(gsort_key):
         'critic rating': gsk_metascore,
         'critic ratings': gsk_metascore,
         'nosort': gsk_nosort,
+        '': gsk_nosort,
         'self rating': gsk_myrating,
         'self ratings': gsk_myrating,
         'personal rating': gsk_myrating,
@@ -184,48 +195,75 @@ def gsort_alias(gsort_key):
     }
     return alias(valid_gsort_keys, aliases, gsort_key)
 
+def sort_aliases(sort_keys):
+    return aliases(sort_alias, sort_keys)
+
+def gsort_aliases(column_keys):
+    aliases(gsort_alias, sort_keys)
+
+def exclude_aliases(exclude_keys):
+    keys = sort_aliases(exclude_keys)
+    
+    if not set(keys).issubset(valid_exclude_keys):
+        raise ValueError()
+
+    return keys
+
 def sort_func(sort_key):
-    # All keys use alphabetic sort as a secondary key.
     if sort_key == sk_released:
-        return lambda appearance: (appearance.movie.released, appearance.movie.title.lower())
+        return lambda appearance: appearance.movie.released
     if sort_key == sk_watched:
-        return lambda appearance: (appearance.movie.watched, appearance.movie.title.lower())
-    elif sort_key == sk_rating:
-        return lambda appearance: (appearance.movie.rating, appearance.movie.title.lower())
-    elif sort_key == sk_metascore:
-        return lambda appearance: (appearance.movie.metascore, appearance.movie.title.lower())
-    elif sort_key == sk_myrating:
-        return lambda appearance: (appearance.movie.myrating, appearance.movie.title.lower())
-    elif sort_key == sk_alpha:
+        return lambda appearance: appearance.movie.watched
+    if sort_key == sk_rating:
+        return lambda appearance: appearance.movie.rating
+    if sort_key == sk_metascore:
+        return lambda appearance: appearance.movie.metascore
+    if sort_key == sk_myrating:
+        return lambda appearance: appearance.movie.myrating
+    if sort_key == sk_runtime:
+        return lambda appearance: appearance.movie.runtime
+    if sort_key == sk_alpha:
         return lambda appearance: appearance.movie.title.lower()
-    else:
-        return None
+
+    return lambda appearance: 0
 
 def gsort_func(gsort_key):
-    # All keys use alphabetic sort as a secondary key.
     if gsort_key == gsk_nmovies:
-        return lambda tup: (len(tup[1]), *(p.name for p in tup[0]))
-    elif gsort_key == gsk_rating:
-        return lambda tup: (sum(appearance.movie.rating for appearance in tup[1] if appearance.movie.rating != -1) / len(tup[1]), *(p.name for p in tup[0]))
-    elif gsort_key == gsk_metascore:
-        return lambda tup: (sum(appearance.movie.metascore for appearance in tup[1] if appearance.movie.metascore != -1) / len(tup[1]), *(p.name for p in tup[0]))
-    elif gsort_key == gsk_myrating:
-        return lambda tup: (sum(appearance.movie.myrating for appearance in tup[1] if appearance.movie.myrating != -1) / len(tup[1]), *(p.name for p in tup[0]))
-    elif gsort_key == gsk_npeople:
-        return lambda tup: (len(tup[0]), *(p.name for p in tup[0]))
-    elif gsort_key == gsk_alpha:
+        return lambda tup: len(tup[1])
+    if gsort_key == gsk_rating:
+        return lambda tup: sum(appearance.movie.rating for appearance in tup[1] if appearance.movie.rating != -1) / len(tup[1])
+    if gsort_key == gsk_metascore:
+        return lambda tup: sum(appearance.movie.metascore for appearance in tup[1] if appearance.movie.metascore != -1) / len(tup[1])
+    if gsort_key == gsk_myrating:
+        return lambda tup: sum(appearance.movie.myrating for appearance in tup[1] if appearance.movie.myrating != -1) / len(tup[1])
+    if gsort_key == gsk_npeople:
+        return lambda tup: len(tup[0])
+    if gsort_key == gsk_alpha:
         # The people list itself is guaranteed to be already sorted.
         return lambda tup: tuple(p.name.lower() for p in tup[0])
-    elif gsort_key == gsk_nosort:
-        return None
+
+    return lambda tup: 0
+
+def is_default(movie_json, xkey):
+    if xkey == sk_rating:
+        return movie_json[xkey] == -1
+    if xkey == sk_metascore:
+        return movie_json[xkey] == '-1'
+    if xkey == sk_myrating:
+        return movie_json['myrating'] == '' # sk_myrating is 'my rating' (with a space).
+
+    return False
+
+def join_keys(keys):
+    return ', '.join((f"'{k}'" for k in keys))
 
 def get_squish(creds, *gsorters):
     max_chars = 180 # This is the length that we wish not to exceed.
     max_ngroups = 0
 
     for gs_func in gsorters:
-        group_max_gval = max((gs_func(group)[0] for group in creds), default=0)
-        group_max_ngroups = max((sum(1 for group in creds if gs_func(group)[0] == gval) for gval in range(1, group_max_gval + 1)), default=1)
+        group_max_gval = max((gs_func(group) for group in creds), default=0)
+        group_max_ngroups = max((sum(1 for group in creds if gs_func(group) == gval) for gval in range(1, group_max_gval + 1)), default=1)
 
         if group_max_ngroups > max_ngroups:
             max_ngroups = group_max_ngroups
@@ -234,13 +272,13 @@ def get_squish(creds, *gsorters):
 
 def create_breakdown(creds, title, breakdown_gsorter, squish):
     # Getting the largest value we have for this group key.
-    max_gval = max((breakdown_gsorter(group)[0] for group in creds), default=1)
+    max_gval = max((breakdown_gsorter(group) for group in creds), default=1)
 
     # Collecting all the data we want about each value. We want it as an int, as a str, how many groups have this value,
     # and a string of underscores that represents that same number.
     def add_data(gval):
         gval_str = str(gval)
-        ngroups = sum(1 for group in creds if breakdown_gsorter(group)[0] == gval)
+        ngroups = sum(1 for group in creds if breakdown_gsorter(group) == gval)
         underscores = "_" * -(ngroups // -squish) # We use a trick to turn division with floor into ceiling.
         return gval, gval_str, ngroups, underscores
 
@@ -265,7 +303,10 @@ f'''
 ''')
 
 # This is needed. Trust me.
-sys.stdout.reconfigure(encoding='utf-8', newline='\n')
+try:
+    sys.stdout.reconfigure(encoding='utf-8', newline='\n')
+except:
+    pass
 
 ct_cast = 'cast'
 ct_editor = 'editor'
@@ -278,12 +319,12 @@ ct_stunt_performer = 'stunt performer'
 valid_crew_types = [ct_cast, ct_editor, ct_writer, ct_director, ct_composer, ct_producer, ct_cinematographer, ct_stunt_performer]
 default_grouping = {
     ct_cast: False,
+    ct_producer: False,
     ct_stunt_performer: False,
     ct_editor: True,
     ct_writer: True,
     ct_director: True,
     ct_composer: True,
-    ct_producer: True,
     ct_cinematographer: True,
 }
 
@@ -294,7 +335,9 @@ sk_rating = 'rating'
 sk_metascore = 'metascore'
 sk_myrating = 'my rating'
 sk_alpha = 'alphabetical'
-valid_sort_keys = [sk_released, sk_watched, sk_rating, sk_nosort, sk_metascore, sk_myrating, sk_alpha]
+sk_runtime = 'runtime'
+valid_sort_keys = [sk_released, sk_watched, sk_rating, sk_nosort, sk_metascore, sk_myrating, sk_alpha, sk_runtime]
+valid_exclude_keys = [sk_rating, sk_metascore, sk_myrating]
 
 gsk_nosort = 'none'
 gsk_rating = 'rating'
@@ -306,26 +349,35 @@ gsk_alpha = 'alphabetical'
 valid_gsort_keys = [gsk_nosort, gsk_rating, gsk_nmovies, gsk_npeople, gsk_metascore, gsk_myrating, gsk_alpha]
 
 parser = argparse.ArgumentParser(
-    description='Give this the output of mfetch.py and a crew type and it will print the movies organized by crewmembers',
-    epilog='''Crew types, sort keys, and group sort keys all support many aliases so you can use similar words that make sense to you,
-and omit spaces or replace them with '-' or '_' (e.g., 'myrating', 'stunt_performer')''')
+    formatter_class=argparse.RawTextHelpFormatter,
+    description='Give this the output of mfetch.py and a crew type and it will print the movies organized by crewmembers.',
+    epilog='Crew types, sort keys, group sort keys, and exclude keys all support many aliases so you can use similar words that make sense to you,'
+    " and omit spaces or replace them with '-' or '_' (e.g., 'myrating', 'stunt_performer').")
 parser.add_argument('-G', '--group', choices=['yes', 'auto', 'no'], type=str.lower, default='auto', action='store', help=
     'If yes, will group people who\'ve collaborated together. Default is auto, which uses a group mode that makes sense for CREW')
 parser.add_argument('-m', '--min', metavar='NUM', type=int, default=1, action='store', help=
     'Groups with fewer than NUM movies will not be printed. Defaults to unbounded')
-parser.add_argument('-s', '--sort', metavar='KEY', type=sort_alias, default=sk_released, action='store', help=
-    f'Sort movies according to KEY. Defaults to release date. Valid sort keys: {", ".join(valid_sort_keys)}')
-parser.add_argument('-g', '--group-sort', metavar='KEY', type=gsort_alias, default=gsk_nmovies, action='store', help=
-    f'Sort groups according to KEY. Defaults to number of movies. Valid group sort keys: {", ".join(valid_gsort_keys)}')
+parser.add_argument('-s', '--sort', metavar='KEYS', type=sort_aliases, default=[sk_released, sk_alpha], action='store', help=
+    f'''Sort movies according to KEYS, which is a comma-delimited list of keys to sort by, in decreasing priority. Defaults to "released,alphabetical".
+Valid sort keys: {join_keys(valid_sort_keys)}''')
+parser.add_argument('-g', '--group-sort', metavar='KEYS', type=gsort_aliases, default=[gsk_nmovies, gsk_alpha], action='store', help=
+    f'''Sort groups according to KEYS, which is a comma-delimited list of keys to sort by, in decreasing priority. Defaults to "nmovies,alphabetical".
+Valid group sort keys: {join_keys(valid_gsort_keys)}''')
 parser.add_argument('-p', '--print', default=False, action='store_true', help=
     'Print a list of valid crew types and exit')
-parser.add_argument('-x KEY', '--exclude', choices=['rating', 'metascore', 'myrating'], default=[], action='append', help=
-    'Exclude movies which don\'t have a value for KEY.')
+parser.add_argument('-x', '--exclude', metavar='KEYS', type=exclude_aliases, default=[], action='store', help=
+    f'''Exclude movies which don't have a value for any one of KEYS, which is a comma-delimited list of keys. Defaults to no exclusions.
+Valid exclude keys: {join_keys(valid_exclude_keys)}''')
+parser.add_argument('-r', '--reverse-movies', default=True, action='store_false', help=
+    'Reverse the sort order of movies')
+parser.add_argument('-R', '--reverse-groups', default=True, action='store_false', help=
+    'Reverse the sort order of groups')
 parser.add_argument('CREW', type=crew_alias, action='store', help=
-    f'The type of crewmember to organize movies by. Valid crew types: {", ".join(valid_crew_types)}')
+    f'''The type of crewmember to organize movies by.
+Valid crew types: {", ".join(valid_crew_types)}''')
 parser.add_argument('JSON', nargs='*', action='store', help=
-    '''A list of input JSONs, which were output by mfetch.py. They will be treated as a single list of unique movies.
-With no JSON, or when JSON is -, use standard input''')
+    'A list of input JSONs, which were output by mfetch.py. They will be treated as a single list of unique movies.'
+    ' With no JSON, or when JSON is -, use standard input')
 args = parser.parse_args()
 
 # CREW is optional in this case but it's easier to keep it mandatory and ignore it.
@@ -334,13 +386,14 @@ if args.print:
     exit()
 
 crew_type = args.CREW
-sort_key = args.sort
-gsort_key = args.group_sort
+sort_keys = args.sort
+gsort_keys = args.group_sort
+reverse_movies = args.reverse_movies
+reverse_groups = args.reverse_groups
 min_length = args.min
 jsonfiles = ['-'] if len(args.JSON) == 0 else args.JSON
 group_mode = True if args.group == 'yes' else False if args.group == 'no' else default_grouping[crew_type]
 exclude_keys = args.exclude
-default_xkey = { 'rating': -1, 'metascore': '-1', 'myrating': '' }
 
 movies = set()
 read_stdin = False
@@ -355,8 +408,8 @@ for jsonfile in jsonfiles:
     with sys.stdin if jsonfile == '-' else open(jsonfile, 'r') as f:
         data = json.load(f)
 
-    excluded = [m for m in data['movies'] if True not in (m[xkey] == default_xkey[xkey] for xkey in exclude_keys)]
-    movies.update(json_to_movie(m, crew_type) for m in excluded)
+    not_excluded = [m for m in data['movies'] if all(not is_default(m, xkey) for xkey in exclude_keys)]
+    movies.update(json_to_movie(m, crew_type) for m in not_excluded)
 
 if group_mode:
     # High level, the algorithm is as follows:
@@ -418,9 +471,8 @@ else: # Not group mode.
 creds = [(sorted(people, key=lambda p: p.name), appearances) for people, appearances in creds if len(appearances) >= min_length]
 
 # Sorting by number of movies from each people set.
-gsorter = gsort_func(gsort_key)
-if gsorter != None:
-    creds.sort(key=gsorter, reverse=True)
+for gsk in gsort_keys[::-1]:
+    creds.sort(key=gsort_func(gsk), reverse=reverse_groups)
 
 # Computing these two in 1-liners with reduce proved to be the most expensive thing about this program by far
 total_people_shown = set()
@@ -432,10 +484,10 @@ for people, _ in creds:
 for movie in movies:
     total_people.update(movie.people)
 
-sorter = sort_func(sort_key)
 gsorter_nmovies = gsort_func(gsk_nmovies)
 gsorter_rating = gsort_func(gsk_rating)
 gsorter_metascore = gsort_func(gsk_metascore)
+gsorter_npeople = gsort_func(gsk_npeople)
 
 print(
 f'''Total groups shown: {len(creds)}
@@ -445,28 +497,28 @@ Total people: {len(total_people)}
 
 # We want a uniform squish for both breakdowns.
 if group_mode:
-    squish = get_squish(creds, gsorter_nmovies, gsort_func(gsk_npeople))
+    squish = get_squish(creds, gsorter_nmovies, gsorter_npeople)
 else:
     squish = get_squish(creds, gsorter_nmovies)
     
 print(create_breakdown(creds, '# of Groups For Every # of Movies', gsorter_nmovies, squish))
 
 if group_mode:
-    print(create_breakdown(creds, '# of Groups For Every Group Size', gsort_func(gsk_npeople), squish))
+    print(create_breakdown(creds, '# of Groups For Every Group Size', gsorter_npeople, squish))
 
 print()
 
 for people, appearances in creds:
     group = (people, appearances)
 
-    if sorter != None:
-        appearances.sort(key=sorter, reverse=True)
+    for sk in sort_keys[::-1]:
+        appearances.sort(key=sort_func(sk), reverse=reverse_movies)
 
     group_header = (
 f'''{", ".join(person.name for person in people)}:
-    Total: {gsorter_nmovies(group)[0]}
-    Average Rating: {gsorter_rating(group)[0]:.2f}
-    Average Metascore: {gsorter_metascore(group)[0]:.2f}
+    Total: {gsorter_nmovies(group)}
+    Average Rating: {gsorter_rating(group):.2f}
+    Average Metascore: {gsorter_metascore(group):.2f}
     ~~~~~~~~~~~~~~~~~
 ''')
 
