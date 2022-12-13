@@ -19,6 +19,7 @@ import json
 import sys
 import datetime
 import argparse
+import os
 
 class Person:
     def __init__(self, iden, name):
@@ -376,8 +377,12 @@ parser.add_argument('CREW', type=crew_alias, action='store', help=
     f'''The type of crewmember to organize movies by.
 Valid crew types: {", ".join(valid_crew_types)}''')
 parser.add_argument('JSON', nargs='*', action='store', help=
-    'A list of input JSONs, which were output by mfetch.py. They will be treated as a single list of unique movies.'
-    ' With no JSON, or when JSON is -, use standard input')
+    '''A list of input JSONs, which were output by mfetch.py. They will be treated as a single list of unique movies. Supports:
+1. '-' for standard input
+2. Absolute paths, paths relative to the current directory
+3. Paths relative to the directory pointed to by the MOVIES_DIR environment variable
+In all forms the .json extension can optionally be omitted.
+If no JSON provided, use standard input.''')
 args = parser.parse_args()
 
 # CREW is optional in this case but it's easier to keep it mandatory and ignore it.
@@ -405,7 +410,18 @@ for jsonfile in jsonfiles:
             continue
         read_stdin = True
 
-    with sys.stdin if jsonfile == '-' else open(jsonfile, 'r') as f:
+    # We allow filenames without the .json extension, and also paths relative to the MOVIES_DIR env var.
+    try:
+        matching_file = next(path for path in [
+            jsonfile,
+            f'{jsonfile}.json',
+            f'{(os.environ.get("MOVIES_DIR", "."))}/{jsonfile}',
+            f'{(os.environ.get("MOVIES_DIR", "."))}/{jsonfile}.json'
+            ] if path == '-' or os.path.isfile(path))
+    except:
+        sys.exit(f"{jsonfile}: No such file.")
+        
+    with sys.stdin if matching_file == '-' else open(matching_file, 'r') as f:
         data = json.load(f)
 
     not_excluded = [m for m in data['movies'] if all(not is_default(m, xkey) for xkey in exclude_keys)]

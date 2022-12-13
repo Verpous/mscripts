@@ -163,7 +163,7 @@ for loc in "${where[@]}"; do
     if [[ "$loc" == '-' ]]; then
         infile=/dev/stdin
     else
-        IFS='' read -rd '' infile < <(find -- "$loc" "$loc.txt" "$catdir/$loc" "$catdir/$loc.txt" -maxdepth 0 -type f -readable -print0 2> /dev/null)
+        IFS='' read -rd '' infile < <(find -L -- "$loc" "$loc.txt" "$catdir/$loc" "$catdir/$loc.txt" -maxdepth 0 -type f,p -readable -print0 2> /dev/null)
         [[ -z "$infile" ]] && { echo "'$loc' is not a valid WHERE. Skipping it" >&2; continue; }
     fi
 

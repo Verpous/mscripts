@@ -15,11 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-# TODO: Update the readme to all the new changes. Of particular interest: 
-# 1. Change examples of running "bash <command>" to instead say "open bash and run: <command>". Apparently running bash scripts from cmd can result in different behavior.
-# 2. Descriptions for mbrowse, when (also add them to the repo)
-# 3. mconfig now uses semicolon delimiters instead of commas (this also requires changing the mconfig example)
-
 # TODO: I'm running out of steam here but I'll write down ideas for the future:
 # 1. A whole new take on mscripts: forget mpeople and mgrep,
 #    all you need is mbrowse-like output with an entry not just per movie but per person per movie, with a file per crew type.
@@ -33,7 +28,7 @@
 #    This way you eliminate the code repetition when using the same key in multiple key types.
 # 3. Refactor: pick one of mbrowse or mprint to double as a library when not run with __name__ == "main".
 #    Put all the code there that is shared between different scripts, and import it from the other scripts to eliminate code repetition.
-# 4. ANSI hyperlinks in people's names and the movie title to their you to their IMDb page.
+# 4. ANSI hyperlinks in people's names and the movie title to link you to their IMDb page.
 
 import json
 import sys
@@ -42,7 +37,8 @@ import argparse
 import tempfile
 import os
 import csv
-from collections import namedtuple
+import tempfile
+import subprocess
 
 try:
     from colorama import just_fix_windows_console
@@ -335,7 +331,7 @@ def is_default(movie, xkey):
 # Assumes that input is valid. That means:
 # records is a matrix of strings (that is, a list of equal-length lists of strings).
 # use_colors is False or colors is a nonempty list of color codes.
-def tabulate(records, fillchar=' ', spacious=False, use_color=True,
+def tabulate(records, fillchar=' ', spacious=False, use_color=True, file=sys.stdin,
     fillcolor=  '\033[30;1m\033[K', # Gray
     headercolor='\033[4m\033[K',    # Underline
     column_colors=[
@@ -368,12 +364,12 @@ def tabulate(records, fillchar=' ', spacious=False, use_color=True,
     for row, record in enumerate(records):
         for col, entry in enumerate(record):
             color = column_colors[col % len(column_colors)]
-            print(f'{color}{headercolor}{entry}{nocolor}{fillcolor}{(maxlens[col] - len(entry)) * fillchar}{nocolor}', end='')
+            print(f'{color}{headercolor}{entry}{nocolor}{fillcolor}{(maxlens[col] - len(entry)) * fillchar}{nocolor}', end='', file=file)
         
-        print()
+        print(file=file)
 
         if spacious and row < len(records) - 1:
-            print()
+            print(file=file)
 
         headercolor = '' # After first row, make header color none.
 
@@ -454,6 +450,8 @@ parser.add_argument('-u', '--unique', default=False, action='store_true', help=
     'When merging JSONs, remove duplicate movies. Note that duplicate movies can still have a different leaving date, and this will arbitrarily omit one of them')
 parser.add_argument('-S', '--spacious', default=False, action='store_true', help=
     'Add an empty line between entries')
+parser.add_argument('-L', '--less', default=False, action='store_true', help=
+    'Pipe output to less')
 parser.add_argument('JSON', nargs='*', action='store', help=
     '''A list of input JSONs, which were output by mfetch.py. They will be treated as a single list of movies. Supports:
 1. '-' for standard input
@@ -474,6 +472,7 @@ verbose = args.verbose
 reverse_all = args.reverse
 uniqify = args.unique
 spacious = args.spacious
+less = args.less
 exclude_keys = args.exclude
 jsonfiles = ['-'] if len(args.JSON) == 0 else args.JSON
 
@@ -511,12 +510,15 @@ for jsonfile in jsonfiles:
         read_stdin = True
 
     # We allow filenames without the .json extension, and also paths relative to the MOVIES_DIR env var.
-    matching_file = next(path for path in [
-        jsonfile,
-        f'{jsonfile}.json',
-        f'{(os.environ.get("MOVIES_DIR", "."))}/{jsonfile}',
-        f'{(os.environ.get("MOVIES_DIR", "."))}/{jsonfile}.json'
-        ] if path == '-' or os.path.isfile(path))
+    try:
+        matching_file = next(path for path in [
+            jsonfile,
+            f'{jsonfile}.json',
+            f'{(os.environ.get("MOVIES_DIR", "."))}/{jsonfile}',
+            f'{(os.environ.get("MOVIES_DIR", "."))}/{jsonfile}.json'
+            ] if path == '-' or os.path.isfile(path))
+    except:
+        sys.exit(f"{jsonfile}: No such file.")
         
     with sys.stdin if matching_file == '-' else open(matching_file, 'r') as f:
         data = json.load(f)
@@ -562,9 +564,21 @@ dummy = Movie(None, None)
 dummy.record = [column_titles[ck] for ck in column_keys]
 movies.insert(0, dummy)
 
-# Output movies in a pretty table.
-if dsv:
-    writer = csv.writer(sys.stdout, delimiter=delim)
-    writer.writerows(movie.record for movie in movies)
-else:
-    tabulate([movie.record for movie in movies], fillchar='.' if color else ' ', spacious=spacious, use_color=color)
+# Pipe to less if requested. I tried a lot of variations including of course Popen(stdin=PIPE), this is the only one that works.
+with tempfile.NamedTemporaryFile('w', encoding='utf-8') if less else sys.stdout as f:
+    # Output movies in a pretty table.
+    if dsv:
+        writer = csv.writer(f, delimiter=delim)
+        writer.writerows(movie.record for movie in movies)
+    else:
+        tabulate([movie.record for movie in movies], fillchar='.' if color else ' ', spacious=spacious, use_color=color, file=f)
+    
+    f.flush()
+
+    if less:
+        try:
+            ps = subprocess.Popen(['less', '-RS', f.name])
+            ps.wait()
+        except:
+            print("-L option failed. You either don't have less it or it is not in PATH.", file=sys.stderr)
+
