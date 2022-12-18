@@ -102,9 +102,8 @@ options::init() {
                         print
                         next
                     }
-                    1' |
-                # Now adding the line for -h.
-                cat - <(echo "  -h            Display this help and exit.")
+                    1
+                    END { print "  -h            Display this help and exit." }'
 
             # Now doing the epilogue. It's the same as the intro, but with 3 #'s instead of 2.
             sed -En '/^###>?\s/p' -- "$options_src" | sed -Ez 's/^./\n&/ ; s/\n###>\s/ /g ; s/(^|\n)###\s/\1/g'

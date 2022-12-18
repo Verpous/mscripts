@@ -28,7 +28,6 @@
 #    This way you eliminate the code repetition when using the same key in multiple key types.
 # 3. Refactor: pick one of mbrowse or mprint to double as a library when not run with __name__ == "main".
 #    Put all the code there that is shared between different scripts, and import it from the other scripts to eliminate code repetition.
-# 4. ANSI hyperlinks in people's names and the movie title to link you to their IMDb page.
 
 import json
 import sys
@@ -75,11 +74,14 @@ class Movie:
 
     def get_days_left(self, default=None):
         try:
-            date = datetime.datetime.strptime(self.obj['description'], '%Y-%m-%d')
+            date = datetime.datetime.strptime(self.get_description(), '%Y-%m-%d')
         except:
             return default
 
         return (date - datetime.datetime.today()).days
+
+    def get_description(self):
+        return self.obj['description']
 
     def get_crew(self, crew_type, lower=False, default=None):
         if len(self.obj[crew_type]) == 0:
@@ -190,6 +192,9 @@ def sort_alias(sort_key):
         'leave date': sk_leaving,
         'leaves': sk_leaving,
         'days remaining': sk_leaving,
+        'explanation': sk_description,
+        'desc': sk_description,
+        'descriptions': sk_description,
     }
 
     try:
@@ -233,9 +238,15 @@ def column_alias(column_key):
         'leaves': ck_leaving,
         'days remaining': ck_leaving,
         'list': ck_source,
+        'lists': ck_source,
         'file': ck_source,
+        'files': ck_source,
         'origin': ck_source,
+        'origins': ck_source,
         'from': ck_source,
+        'explanation': ck_description,
+        'desc': ck_description,
+        'descriptions': ck_description,
     }
 
     try:
@@ -298,6 +309,8 @@ def sort_func(sort_key):
         return False, lambda movie: movie.get_days_left(0x7FFFFFFF)
     if sort_key == sk_alpha:
         return False, lambda movie: movie.get_title(True)
+    if sort_key == sk_description:
+        return False, lambda movie: movie.get_description().lower()
     if sort_key in valid_crew_types:
         return False, lambda movie: tuple(movie.get_crew(sort_key, True, []))
 
@@ -321,7 +334,9 @@ def get_column(movie, col_key):
     if col_key == ck_myrating:
         return do(str, movie.get_myrating(), '-')
     if col_key == ck_source:
-        return clampstr(movie.source, from_start=False)
+        return clampstr(movie.source, from_start=False) # From the end because in long paths the end matters most.
+    if col_key == ck_description:
+        return clampstr(movie.get_description())
     if col_key in valid_crew_types:
         return do(lambda l: clampstr(', '.join(l)), movie.get_crew(col_key), '-')
 
@@ -398,6 +413,7 @@ sk_myrating = 'my rating'
 sk_alpha = 'alphabetical'
 sk_runtime = 'runtime'
 sk_leaving = 'leaving'
+sk_description = 'description'
 valid_sort_keys = [sk_released, sk_watched, sk_rating, sk_nosort, sk_metascore, sk_myrating, sk_alpha, sk_runtime, sk_leaving] + valid_crew_types
 
 ck_title = 'title'
@@ -409,7 +425,8 @@ ck_metascore = 'metascore'
 ck_watched = 'watched'
 ck_myrating = 'my rating'
 ck_source = 'source'
-valid_column_keys = [ck_title, ck_leaving, ck_runtime, ck_released, ck_rating, ck_metascore, ck_watched, ck_myrating, ck_source] + valid_crew_types
+ck_description = 'description'
+valid_column_keys = [ck_title, ck_leaving, ck_runtime, ck_released, ck_rating, ck_metascore, ck_watched, ck_myrating, ck_source, ck_description] + valid_crew_types
 valid_exclude_keys = [ck_rating, ck_metascore, ck_myrating, ck_leaving]
 
 are_cols_additive=False
@@ -491,8 +508,11 @@ if args.columns[0]:
     if sk_watched in sort_keys:
         uniq_append(column_keys, ck_watched)
 
-    if sk_myrating in sort_keys and ck_myrating :
+    if sk_myrating in sort_keys:
         uniq_append(column_keys, ck_myrating)
+
+    if sk_description in sort_keys:
+        uniq_append(column_keys, ck_description)
         
     if len(jsonfiles) > 1:
         uniq_append(column_keys, ck_source)
@@ -550,6 +570,7 @@ column_titles = {
     ck_watched: 'Watched',
     ck_myrating: 'My Rating',
     ck_source: 'List',
+    ck_description: 'Description',
     ct_cast: 'Actors',
     ct_editor: 'Editors',
     ct_writer: 'Writers',
