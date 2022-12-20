@@ -63,8 +63,11 @@ class Movie:
     def get_watched(self):
         return datetime.datetime.strptime(self.obj['watched'], '%Y-%m-%d')
 
-    def get_rating(self, default=None):
-        return self.obj['rating'] if self.obj['rating'] != -1 else default
+    def get_rating(self):
+        return float(self.obj['rating'])
+
+    def get_votes(self):
+        return int(self.obj['votes'])
 
     def get_metascore(self, default=None):
         return int(self.obj['metascore']) if self.obj['metascore'] != '-1' else default
@@ -165,6 +168,11 @@ def sort_alias(sort_key):
         'nosort': sk_nosort,
         '': sk_nosort,
         'ratings': sk_rating,
+        'number of votes': sk_votes,
+        'num of votes': sk_votes,
+        'num votes': sk_votes,
+        'vote num': sk_votes,
+        'vote count': sk_votes,
         'critic score': sk_metascore,
         'critic scores': sk_metascore,
         'critic rating': sk_metascore,
@@ -214,6 +222,11 @@ def column_alias(column_key):
         'watched date': ck_watched,
         'date watched': ck_watched,
         'ratings': ck_rating,
+        'number of votes': ck_votes,
+        'num of votes': ck_votes,
+        'num votes': ck_votes,
+        'vote num': ck_votes,
+        'vote count': ck_votes,
         'critic score': ck_metascore,
         'critic scores': ck_metascore,
         'critic rating': ck_metascore,
@@ -298,7 +311,9 @@ def sort_func(sort_key):
     if sort_key == sk_watched:
         return True, lambda movie: movie.get_watched()
     if sort_key == sk_rating:
-        return True, lambda movie: movie.get_rating(-1)
+        return True, lambda movie: movie.get_rating()
+    if sort_key == sk_votes:
+        return True, lambda movie: movie.get_votes()
     if sort_key == sk_metascore:
         return True, lambda movie: movie.get_metascore(-1)
     if sort_key == sk_myrating:
@@ -326,7 +341,9 @@ def get_column(movie, col_key):
     if col_key == ck_released:
         return str(movie.get_released().date() if verbose else movie.get_released().year)
     if col_key == ck_rating:
-        return do(str, movie.get_rating(), '-')
+        return str(movie.get_rating())
+    if col_key == ck_votes:
+        return '{:,}'.format(movie.get_votes())
     if col_key == ck_metascore:
         return do(str, movie.get_metascore(), '-')
     if col_key == ck_watched:
@@ -408,25 +425,27 @@ sk_released = 'released'
 sk_watched = 'watched'
 sk_nosort = 'none'
 sk_rating = 'rating'
+sk_votes = 'votes'
 sk_metascore = 'metascore'
 sk_myrating = 'my rating'
 sk_alpha = 'alphabetical'
 sk_runtime = 'runtime'
 sk_leaving = 'leaving'
 sk_description = 'description'
-valid_sort_keys = [sk_released, sk_watched, sk_rating, sk_nosort, sk_metascore, sk_myrating, sk_alpha, sk_runtime, sk_leaving] + valid_crew_types
+valid_sort_keys = [sk_released, sk_watched, sk_rating, sk_votes, sk_nosort, sk_metascore, sk_myrating, sk_alpha, sk_runtime, sk_leaving] + valid_crew_types
 
 ck_title = 'title'
 ck_leaving = 'leaving'
 ck_runtime = 'runtime'
 ck_released = 'released'
 ck_rating = 'rating'
+ck_votes = 'votes'
 ck_metascore = 'metascore'
 ck_watched = 'watched'
 ck_myrating = 'my rating'
 ck_source = 'source'
 ck_description = 'description'
-valid_column_keys = [ck_title, ck_leaving, ck_runtime, ck_released, ck_rating, ck_metascore, ck_watched, ck_myrating, ck_source, ck_description] + valid_crew_types
+valid_column_keys = [ck_title, ck_leaving, ck_runtime, ck_released, ck_rating, ck_votes, ck_metascore, ck_watched, ck_myrating, ck_source, ck_description] + valid_crew_types
 valid_exclude_keys = [ck_rating, ck_metascore, ck_myrating, ck_leaving]
 
 are_cols_additive=False
@@ -508,6 +527,9 @@ if args.columns[0]:
     if sk_watched in sort_keys:
         uniq_append(column_keys, ck_watched)
 
+    if sk_votes in sort_keys:
+        uniq_append(column_keys, ck_votes)
+
     if sk_myrating in sort_keys:
         uniq_append(column_keys, ck_myrating)
 
@@ -566,6 +588,7 @@ column_titles = {
     ck_runtime: 'Runtime',
     ck_released: 'Release',
     ck_rating: 'Rating',
+    ck_votes: 'Votes',
     ck_metascore: 'Metascore',
     ck_watched: 'Watched',
     ck_myrating: 'My Rating',

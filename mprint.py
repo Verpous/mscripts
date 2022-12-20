@@ -36,10 +36,11 @@ class Person:
         return hash(self.iden)
 
 class Movie:
-    def __init__(self, iden, title, rating, metascore, myrating, watched, released, description, runtime, crew):
+    def __init__(self, iden, title, rating, votes, metascore, myrating, watched, released, description, runtime, crew):
         self.iden = iden
         self.title = title
         self.rating = rating
+        self.votes = votes
         self.metascore = metascore
         self.myrating = myrating
         self.watched = watched
@@ -71,7 +72,8 @@ class Appearance:
 def json_to_movie(json_movie, crew_type):
     iden = json_movie['imdbID']
     title = json_movie['title']
-    rating = json_movie['rating']
+    rating = float(json_movie['rating'])
+    votes = int(json_movie['votes'])
     metascore = int(json_movie['metascore'])
     myrating = int(json_movie['myrating']) if len(json_movie['myrating']) != 0 else -1
     watched = datetime.datetime.strptime(json_movie['watched'], '%Y-%m-%d')
@@ -80,7 +82,7 @@ def json_to_movie(json_movie, crew_type):
     runtime = int(json_movie['runtime']) if len(json_movie['runtime']) != 0 else -1
     json_crew = json_movie[crew_type]
     crew = [CrewMember(Person(c['id'], c['name']), c['roles']) for c in json_crew]
-    return Movie(iden, title, rating, metascore, myrating, watched, released, description, runtime, crew)
+    return Movie(iden, title, rating, votes, metascore, myrating, watched, released, description, runtime, crew)
 
 def find_index(items, pred):
     return next((i for i, item in enumerate(items) if pred(item)), len(items))
@@ -134,6 +136,11 @@ def sort_alias(sort_key):
         'nosort': sk_nosort,
         '': sk_nosort,
         'ratings': sk_rating,
+        'number of votes': sk_votes,
+        'num of votes': sk_votes,
+        'num votes': sk_votes,
+        'vote num': sk_votes,
+        'vote count': sk_votes,
         'critic score': sk_metascore,
         'critic scores': sk_metascore,
         'critic rating': sk_metascore,
@@ -172,6 +179,11 @@ def gsort_alias(gsort_key):
         'people num': gsk_npeople,
         'group size': gsk_npeople,
         'ratings': gsk_rating,
+        'number of votes': gsk_votes,
+        'num of votes': gsk_votes,
+        'num votes': gsk_votes,
+        'vote num': gsk_votes,
+        'vote count': gsk_votes,
         'critic score': gsk_metascore,
         'critic scores': gsk_metascore,
         'critic rating': gsk_metascore,
@@ -199,8 +211,8 @@ def gsort_alias(gsort_key):
 def sort_aliases(sort_keys):
     return aliases(sort_alias, sort_keys)
 
-def gsort_aliases(column_keys):
-    aliases(gsort_alias, sort_keys)
+def gsort_aliases(gsort_keys):
+    return aliases(gsort_alias, gsort_keys)
 
 def exclude_aliases(exclude_keys):
     keys = sort_aliases(exclude_keys)
@@ -217,6 +229,8 @@ def sort_func(sort_key):
         return lambda appearance: appearance.movie.watched
     if sort_key == sk_rating:
         return lambda appearance: appearance.movie.rating
+    if sort_key == sk_votes:
+        return lambda appearance: appearance.movie.votes
     if sort_key == sk_metascore:
         return lambda appearance: appearance.movie.metascore
     if sort_key == sk_myrating:
@@ -232,7 +246,9 @@ def gsort_func(gsort_key):
     if gsort_key == gsk_nmovies:
         return lambda tup: len(tup[1])
     if gsort_key == gsk_rating:
-        return lambda tup: sum(appearance.movie.rating for appearance in tup[1] if appearance.movie.rating != -1) / len(tup[1])
+        return lambda tup: sum(appearance.movie.rating for appearance in tup[1]) / len(tup[1])
+    if gsort_key == gsk_votes:
+        return lambda tup: sum(appearance.movie.votes for appearance in tup[1]) / len(tup[1])
     if gsort_key == gsk_metascore:
         return lambda tup: sum(appearance.movie.metascore for appearance in tup[1] if appearance.movie.metascore != -1) / len(tup[1])
     if gsort_key == gsk_myrating:
@@ -246,8 +262,6 @@ def gsort_func(gsort_key):
     return lambda tup: 0
 
 def is_default(movie_json, xkey):
-    if xkey == sk_rating:
-        return movie_json[xkey] == -1
     if xkey == sk_metascore:
         return movie_json[xkey] == '-1'
     if xkey == sk_myrating:
@@ -333,21 +347,23 @@ sk_released = 'released'
 sk_watched = 'watched'
 sk_nosort = 'none'
 sk_rating = 'rating'
+sk_votes = 'votes'
 sk_metascore = 'metascore'
 sk_myrating = 'my rating'
 sk_alpha = 'alphabetical'
 sk_runtime = 'runtime'
-valid_sort_keys = [sk_released, sk_watched, sk_rating, sk_nosort, sk_metascore, sk_myrating, sk_alpha, sk_runtime]
+valid_sort_keys = [sk_released, sk_watched, sk_rating, sk_votes, sk_nosort, sk_metascore, sk_myrating, sk_alpha, sk_runtime]
 valid_exclude_keys = [sk_rating, sk_metascore, sk_myrating]
 
 gsk_nosort = 'none'
 gsk_rating = 'rating'
+gsk_votes = 'votes'
 gsk_nmovies = 'nmovies'
 gsk_npeople = 'npeople'
 gsk_metascore = 'metascore'
 gsk_myrating = 'my rating'
 gsk_alpha = 'alphabetical'
-valid_gsort_keys = [gsk_nosort, gsk_rating, gsk_nmovies, gsk_npeople, gsk_metascore, gsk_myrating, gsk_alpha]
+valid_gsort_keys = [gsk_nosort, gsk_rating, gsk_votes, gsk_nmovies, gsk_npeople, gsk_metascore, gsk_myrating, gsk_alpha]
 
 parser = argparse.ArgumentParser(
     formatter_class=argparse.RawTextHelpFormatter,

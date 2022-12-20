@@ -35,7 +35,8 @@ except:
 maxdesc = 20
 barlen = 30
 maxsuff = 50
-CsvFields = namedtuple('CsvFields', ['iden', 'title', 'wdate', 'rdate', 'myrating', 'description', 'runtime'])
+CsvFields = namedtuple('CsvFields', ['iden', 'title', 'watched', 'released', 'myrating', 'description', 'runtime', 'rating', 'votes'])
+csv_to_json_keys = [f for f in CsvFields._fields if f not in ['iden', 'title']]
 
 def progbar(desc, count, total, suffix=None):
     if quiet:
@@ -114,7 +115,7 @@ with sys.stdin if csvfile == '-' else open(csvfile, 'r', newline='') as f:
             continue
 
         progbar("Reading CSV", i - 1, reader.line_num - 1)
-        all_csv_data.append(CsvFields(row[1][2:], row[5], row[2], row[13], row[15] if has_myrating else '', row[4], row[9]))
+        all_csv_data.append(CsvFields(row[1][2:], row[5], row[2], row[13], row[15] if has_myrating else '', row[4], row[9], row[8], row[12]))
 
     progbar("Reading CSV", reader.line_num - 1, reader.line_num - 1)
 
@@ -141,7 +142,7 @@ else:
 
 # Fetching data about the movies.
 # Pairs of (key, default value).
-direct_keys = [('imdbID', 'N/A'), ('title', 'N/A'), ('rating', -1), ('metascore', '-1')]
+direct_keys = [('imdbID', 'N/A'), ('title', 'N/A'), ('metascore', '-1')]
 
 # Just the keys.
 people_keys = ['cast', 'director', 'writer', 'producer', 'composer', 'cinematographer', 'editor', 'stunt performer']
@@ -222,6 +223,7 @@ for i, movie in enumerate(movies):
     json_movie = dict()
     json_movie.update({ key: get(movie, key, default) for key, default in direct_keys })
     # These keys will be added later, but I want them to appear before the crew keys in the file so we need to add them now too.
+    json_movie.update({ k: None for k in csv_to_json_keys })
     json_movie.update({ 'myrating': None, 'watched': None, 'released': None, 'description': None, 'runtime': None })
     json_movie.update({ key: json_people(movie, key) for key in people_keys })
     json_movies.append(json_movie)
@@ -242,13 +244,7 @@ for i, fields in enumerate(all_csv_data):
 
     # The only time it can be None is if the download phase got cut short due to an error.
     if json_movie != None:
-        json_movie.update({
-            'myrating': fields.myrating,
-            'watched': fields.wdate,
-            'released': fields.rdate,
-            'description': fields.description,
-            'runtime': fields.runtime,
-            })
+        json_movie.update({ k: getattr(fields, k) for k in csv_to_json_keys})
 
 progbar("Adding CSV data", len(all_csv_data), len(all_csv_data))
 
