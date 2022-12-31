@@ -353,7 +353,7 @@ sk_myrating = 'my rating'
 sk_alpha = 'alphabetical'
 sk_runtime = 'runtime'
 valid_sort_keys = [sk_released, sk_watched, sk_rating, sk_votes, sk_nosort, sk_metascore, sk_myrating, sk_alpha, sk_runtime]
-valid_exclude_keys = [sk_rating, sk_metascore, sk_myrating]
+valid_exclude_keys = [sk_metascore, sk_myrating]
 
 gsk_nosort = 'none'
 gsk_rating = 'rating'

@@ -300,6 +300,19 @@ def do(func, arg, default):
 def clampstr(s, maxlen=30, from_start=True):
     return s if len(s) <= maxlen or verbose else s[:maxlen - 3] + '...' if from_start else '...' + s[-(maxlen - 3):]
 
+def num_to_pretty_str(num, abbreviate=False):
+    if abbreviate:
+        # I graciously thank this StackOverflow user https://stackoverflow.com/a/45846841/12553917.
+        num = float('{:.3g}'.format(num))
+        magnitude = 0
+        while abs(num) >= 1000:
+            magnitude += 1
+            num /= 1000.0
+        return '{}{}'.format('{:f}'.format(num).rstrip('0').rstrip('.'), ['', 'K', 'M', 'B', 'T'][magnitude])
+    else:
+        return '{:,}'.format(movie.get_votes())
+
+
 def runtime_str(runtime):
     hrs = runtime // 60
     mins = runtime % 60
@@ -343,7 +356,7 @@ def get_column(movie, col_key):
     if col_key == ck_rating:
         return str(movie.get_rating())
     if col_key == ck_votes:
-        return '{:,}'.format(movie.get_votes())
+        return num_to_pretty_str(movie.get_votes(), abbreviate=not verbose)
     if col_key == ck_metascore:
         return do(str, movie.get_metascore(), '-')
     if col_key == ck_watched:
@@ -446,7 +459,7 @@ ck_myrating = 'my rating'
 ck_source = 'source'
 ck_description = 'description'
 valid_column_keys = [ck_title, ck_leaving, ck_runtime, ck_released, ck_rating, ck_votes, ck_metascore, ck_watched, ck_myrating, ck_source, ck_description] + valid_crew_types
-valid_exclude_keys = [ck_rating, ck_metascore, ck_myrating, ck_leaving]
+valid_exclude_keys = [ck_metascore, ck_myrating, ck_leaving]
 
 are_cols_additive=False
 

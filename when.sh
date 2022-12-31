@@ -21,6 +21,14 @@
 ## 2. A number.
 ## 3. Optional unit suffix: (s)econds/m(i)nutes/(h)ours/(d)ays/(w)eeks/(m)onths/(y)ears. Defaults to days.
 
+### Examples:
+###     ##PROG 3                  (what's the date 3 days from now)
+###     ##PROG 2m                 (what's the date 2 months from now)
+###     ##PROG -- -30i            (what's the date 30 minutes ago)
+###     ##PROG -v +1y -3w 2s -5h  (what's the date 1 year, minus 3 weeks, plus 2 seconds, minus 5 hours from now, in verbose format)
+###     ##PROG -d 1999-07-25 160d (what's the date 160 days from July 25, 1999)
+
+
 scripts="$(dirname "$0")"
 source "$scripts"/options.sh
 source "$scripts"/utils.sh
