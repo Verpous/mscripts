@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-## Fetches imdb lists and updates the local json store for them and the resulting category files.
+## Fetches IMDb lists and updates the local json store for them and the resulting category files.
 ## LIST is case-insensitive and can be either:
 ## 1. A list name as defined in the configuration file
 ## 2. An IMDb list ID

@@ -470,7 +470,7 @@ parser = argparse.ArgumentParser(
     epilog='Sort keys, exclude keys, and column names all support many aliases so you can use similar words that make sense to you,'
     ''' and omit spaces or replace them with '-' or '_' (e.g., 'myrating', 'release_date').
 
-About the "leaving" sort option: if you set the movie's description in IMDb to a date in the format Y-m-d (e.g. 2023-07-25), this option will sort by that date.
+About the "leaving" sort option: if you set the movie's description in IMDb to a date in the format YYYY-MM-DD (e.g. 2023-07-25), this option will sort by that date.
 I set the descriptions to the dates I know movies in my watchlist will be leaving streaming services, so I can prioritize watching them before they're gone.''')
 parser.add_argument('-s', '--sort', metavar='KEYS', type=sort_aliases, default=[sk_leaving, sk_runtime, sk_alpha], action='store', help=
     f'''Sort movies according to KEYS, which is a comma-delimited list of keys to sort by, in decreasing priority. Defaults to 'leaving,runtime,alphabetical'.

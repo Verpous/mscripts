@@ -76,10 +76,10 @@ handle_option() {
         w) ## Use watched date instead of release date.
             datetype=watched
             ;;
-        g) ## PATTERN ## Only count movies whose date in %Y-%m-%d format matches PATTERN. Syntax is the same as egrep.
+        g) ## PATTERN ## Only count movies whose date in YYYY-MM-DD format matches PATTERN. Syntax is the same as egrep.
             include="$2"
             ;;
-        v) ## PATTERN ## Don't count movies whose date in %Y-%m-%d format matches PATTERN. Syntax is the same as egrep.
+        v) ## PATTERN ## Don't count movies whose date in YYYY-MM-DD format matches PATTERN. Syntax is the same as egrep.
             exclude="$2"
             ;;
     esac
@@ -157,17 +157,18 @@ tmp="$(mktemp)"
 "$scripts"/mbrowse.py -vC "$datetype" $uniqflag -- "$@" | sed -En '2,$s/ //gp' |
     grep -E -- "$include" | grep -Ev -- "$exclude" | set_precision | sort | uniq -c |
     { $omit_zeroes && cat || gawk -v min="$min" -v max="$max" -v pad="$pad" '
+        function myprint(nmovies, date) { printf "%d %.*d\n", nmovies, pad, date }
         NR == 1 {
             last = (min == -1 ? $2 : min) - 1
         }
         1 {
-            for (last++; last < $2; last++) printf "%d %.*d\n", 0, pad, last
-            printf "%d %.*d\n", $1, pad, $2
+            for (last++; last < $2; last++) myprint(0, last)
+            myprint($1, $2)
         }
         END {
             if (max == -1) max = last
             if (NR == 0) last = (min == -1 ? max : min) - 1
-            for (last++; last <= max; last++) printf "%d %.*d\n", 0, pad, last
+            for (last++; last <= max; last++) myprint(0, last)
         }'
     } | sort -s $sortkey | gawk -v name_map="$name_map" '
         function getname(i) {
