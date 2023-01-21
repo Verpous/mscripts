@@ -460,7 +460,7 @@ Just clone this repository and you can run the scripts. I recommend adding their
 
 * [Python](https://www.python.org/), for mfetch, mprint, and mbrowse. I don't know exactly what minimum version you need. It's best to go with something recent. I'm using 3.9.7
 * [Cinemagoer](https://cinemagoer.github.io/), for mfetch. You can simply `pip install cinemagoer`
-* Bash & GNU Coreutils (`grep`, `find`, `sed`, `mv`, `mktemp`, etc.), for mup and mgrep. Again, I don't know minimum versions. I'm on Bash 4.4.23. If you're on Linux, you probably already have these. If you're on Windows like me, you'll need to install them. I use [mingw-w64](https://www.mingw-w64.org/), which I've installed through [MSYS2](https://www.msys2.org/). [Git](https://git-scm.com/downloads) also comes bundled with Bash and some utils, which I think is sufficient and certainly easier to install.
+* Bash & GNU Coreutils (`grep`, `find`, `sed`, `mv`, `mktemp`, etc.), for all the bash scripts. Again, I don't know minimum versions. I'm on Bash 4.4.23. If you're on Linux, you probably already have these. If you're on Windows like me, you'll need to install them. I use [mingw-w64](https://www.mingw-w64.org/), which I've installed through [MSYS2](https://www.msys2.org/). [Git](https://git-scm.com/downloads) also comes bundled with Bash and some utils, which I think is sufficient and certainly easier to install.
 
 ## Notes
 
