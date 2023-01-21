@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# Copyright (C) 2022 Aviv Edery.
+# Copyright (C) 2023 Aviv Edery.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 ## In all forms the .txt extension can optionally be omitted. All forms are case-sensitive.
 ## If no WHERE provided, searches all .txt files in the lookup category.
 
-scripts="$(dirname "$0")"
+scripts="$(dirname -- "$BASH_SOURCE")"
 source "$scripts"/options.sh
 source "$scripts"/utils.sh
 
@@ -42,12 +42,12 @@ handle_option() {
         i) ## Turn on case sensitivity for PATTERN. Default is to be case-insensitive.
             casing=""
             ;;
-        C) ## WHEN ## Set color to one of 'always', 'auto', or 'never' (case-insensitive). Defaults to auto.
+        C) ## WHEN ## Set color to one of 'always', 'auto', or 'never' (case-insensitive). Defaults to 'auto'.
             case "${2,,}" in
-                always) color=true;;
-                auto);; # Default, no action needed.
-                never) color=false;;
-                *) utils::error "Invalid color mode: '$2'";;
+                always) color=true ;;
+                auto) ;; # Default, no action needed.
+                never) color=false ;;
+                *) utils::error "Invalid color mode: '$2'" ;;
             esac
             ;;
         H) ## Don't print the file name for each match.
@@ -181,7 +181,7 @@ for loc in "${where[@]}"; do
     # We also get rid of the head of the file up to where it starts listing people.
     # The first person in the list gets printed a little different, so we inject our own US in there to make him like the rest.
     # The flattened file is stored to a temp file (and also piped on) because we'll need to revisit it if $limit==true.
-    sed -En "s/^$/$sep/ ; /^\S.*:$/,\$p" -- "$infile" | tr "\\n$sep" "$sep\\n" | cat <(echo -n "$sep") - | tee "$tmpfile" |
+    sed -En "s/^$/$sep/ ; /^\S.*:$/,\$p" -- "$infile" | tr "\\n$sep" "$sep\\n" | cat <(echo -n "$sep") - | tee -- "$tmpfile" |
     # Steps 2 and 3. We match the pattern and then unflatten.
     # We don't restore it exactly to its original form, to achieve prettier output.
     grep -E --color=$grepcolor $casing $invert $mflag -e "$pattern" | tr -d '\n' | tr "$sep" '\n' |
@@ -215,4 +215,4 @@ for loc in "${where[@]}"; do
     $limit && lastcount="$(grep -Ec $casing $invert $mflag -e "$pattern" -- "$tmpfile")"
 done
 
-rm "$tmpfile"
+rm -- "$tmpfile"

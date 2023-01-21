@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# Copyright (C) 2022 Aviv Edery.
+# Copyright (C) 2023 Aviv Edery.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@
 # * if '-f' is not set, it acts as though you ran mup on the categories' dependencies.
 # * if '-f' is set, it only generates the requested categories.
 
-scripts="$(dirname "$0")"
+scripts="$(dirname -- "$BASH_SOURCE")"
 source "$scripts"/options.sh
 source "$scripts"/utils.sh
 shopt -s extglob
@@ -40,7 +40,7 @@ fdir="$(path "${MOVIES_FDIR:-$PROGRAMFILES\\Mozilla Firefox}")"
 default_downloads=~/Downloads # Tilde expansion won't happen if we write this string directly in the line below.
 downloads="$(path "${MOVIES_FDOWNLOADS:-$default_downloads}")"
 popts=()
-dopts=()
+fopts=()
 handle_option() {
     case "$1" in
         o) ## Disable optimizations that may cause the script to not function as expected.
@@ -66,7 +66,7 @@ handle_option() {
             do_gen=false
             ;;
         F) ## OPTS ## Semicolon-delimited options to pass to mfetch. DON'T pass -u/--update here. Don't forget to escape/quote the semicolons!
-            readarray -td \; dopts < <(echo -n "$2")
+            readarray -td \; fopts < <(echo -n "$2")
             ;;
         P) ## OPTS ## Semicolon-delimited options to pass to mprint. DON'T pass -p here, and -G is not recommended.
            ##> It's your responsibility to ensure this doesn't conflict with the category mprint options.
@@ -145,17 +145,6 @@ fetch() {
     local out_csv="$2.csv"
     local out_json="$2.json"
 
-    # The optimization is that we'll diff the JSON mfetch outputs with the existing one,
-    # and if nothing has changed then we won't run mprint for this later.
-    if $do_optimize && [[ -f "$mdir/$out_json" ]]; then
-        local orig_json="$(mktemp -p "$mdir")"
-        mv "$mdir/$out_json" "$orig_json"
-        local optimizing=true
-    else
-        local orig_json="$mdir/$out_json"
-        local optimizing=false
-    fi
-
     echo "Downloading '$out_csv'..."
     local initial_csv="$(get_latest_csv)"
     local timeout=20
@@ -168,7 +157,6 @@ fetch() {
     # We'll try to obtain the most recent csv in the downloads folder, until it's a different one than before we started downloading.
     while local in_csv="$(get_latest_csv)"; [[ "$initial_csv" == "$in_csv" ]]; do
         if (( SECONDS > timeout )); then
-            $optimizing && mv "$orig_json" "$mdir/$out_json"
             echo "Timed out when trying to download '$out_csv'. Skipping it" >&2
             return 1
         fi
@@ -179,21 +167,25 @@ fetch() {
     # NOTE: [[ -e "..." ]] would be a lot nicer but for some reason it sometimes creates a copy of the file and messes everything up.
     while (( "$(stat --format="%s" "$downloads/$in_csv")" == 0 )); do
         if (( SECONDS > timeout )); then
-            $optimizing && mv "$orig_json" "$mdir/$out_json"
             echo "Timed out when trying to download '$out_csv'. Skipping it" >&2
             return 1
         fi
     done
 
     mv "$downloads/$in_csv" "$mdir/$out_csv"
-    "$scripts"/mfetch.py --update "$orig_json" "${dopts[@]}" -- "$mdir/$out_csv"
 
-    if $optimizing; then
+    # The optimization is that we'll diff the JSON mfetch outputs with the existing one,
+    # and if nothing has changed then we won't run mprint for this later.
+    if $do_optimize && [[ -f "$mdir/$out_json" ]]; then
+        local temp_json="$(mktemp -p "$mdir")"
+        "$scripts"/mfetch.py --update "$mdir/$out_json" "${fopts[@]}" -- "$mdir/$out_csv" "$temp_json"
+
         # diff exits with 0 when the files are identical.
-        diff -q "$mdir/$out_json" "$orig_json" > /dev/null && local ret=1 || local ret=0
-        rm "$orig_json"
+        diff -q -- "$mdir/$out_json" "$temp_json" > /dev/null && local ret=1 || local ret=0
+        mv -- "$temp_json" "$mdir/$out_json"
         return $ret
     else
+        "$scripts"/mfetch.py "${fopts[@]}" -- "$mdir/$out_csv"
         return 0
     fi
 }

@@ -1,6 +1,6 @@
 #! python
 
-# Copyright (C) 2022 Aviv Edery.
+# Copyright (C) 2023 Aviv Edery.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 # TODO: I'm running out of steam here but I'll write down ideas for the future:
-# 1. A whole new take on mscripts: forget mpeople and mgrep,
+# * A whole new take on mscripts: forget mpeople and mgrep,
 #    all you need is mbrowse-like output with an entry not just per movie but per person per movie, with a file per crew type.
 #    This easily combines with regular grep, and could even combine with awk if we introduce a good separator character (option that's shorthand for -d $'\x1F'?).
 #    Then for mpeople, you could create a totally new script with mbrowse-like output but instead of being movie focused, make it people-focused.
@@ -24,10 +24,11 @@
 #    oldest movie, youngest movie, top rated movie by rating/metascore/myrating, worst rated movie by rating/metascore/myrating, there's a lot we could do...
 #    Problems with this: where do you show groups, how do you stay concise?
 #    As a partial step in this direction, I can add an option to mbrowse which tells it to make entries per person per movie, per crew type column which is to be printed??
-# 2. Refactor: add a Key class which specifies its aliases and maybe extra data like "should be sorted" (for crew type columns).
+# * Refactor: add a Key class which specifies its aliases and maybe extra data like "should be sorted" (for crew type columns).
 #    This way you eliminate the code repetition when using the same key in multiple key types.
-# 3. Refactor: pick one of mbrowse or mprint to double as a library when not run with __name__ == "main".
+# * Refactor: pick one of mbrowse or mprint to double as a library when not run with __name__ == "main".
 #    Put all the code there that is shared between different scripts, and import it from the other scripts to eliminate code repetition.
+# * Expand mconfig to include default mbrowse options, parse mconfig in here and support mbrowsing categories.
 
 import json
 import sys
@@ -470,10 +471,9 @@ parser = argparse.ArgumentParser(
     ''' and omit spaces or replace them with '-' or '_' (e.g., 'myrating', 'release_date').
 
 About the "leaving" sort option: if you set the movie's description in IMDb to a date in the format Y-m-d (e.g. 2023-07-25), this option will sort by that date.
-I set the descriptions to the dates I know movies in my watchlist will be leaving streaming services, so I can prioritize watching them before they're gone.
-This is the main feature that makes this program useful, as IMDb already has pretty good sort options for everything else.''')
+I set the descriptions to the dates I know movies in my watchlist will be leaving streaming services, so I can prioritize watching them before they're gone.''')
 parser.add_argument('-s', '--sort', metavar='KEYS', type=sort_aliases, default=[sk_leaving, sk_runtime, sk_alpha], action='store', help=
-    f'''Sort movies according to KEYS, which is a comma-delimited list of keys to sort by, in decreasing priority. Defaults to "leaving,runtime,alphabetical".
+    f'''Sort movies according to KEYS, which is a comma-delimited list of keys to sort by, in decreasing priority. Defaults to 'leaving,runtime,alphabetical'.
 Valid sort keys: {join_keys(valid_sort_keys)}''')
 parser.add_argument('-x', '--exclude', metavar='KEYS', type=exclude_aliases, default=[], action='store', help=
     f'''Exclude movies which don't have a value for any one of KEYS, which is a comma-delimited list of keys. Defaults to no exclusions.
@@ -485,7 +485,7 @@ parser.add_argument('-d', '--dsv', default=False, action='store_true', help=
 parser.add_argument('-D', '--delim', metavar='DELIM', default=',', action='store', help=
     "Set the delimiter for '-d'. Defaults to commas (i.e., CSV)")
 parser.add_argument('-C', '--columns', metavar='COLUMNS', type=column_aliases, action='store', default=(True, []), help=
-    'List of columns to print, delimited by commas. Defaults to "title,leaving,runtime,released,rating,metascore,director",'
+    'List of columns to print, delimited by commas. Defaults to \'title,leaving,runtime,released,rating,metascore,director\','
     f''' with a few other "smart" columns which activate when a condition is met.
 This option overrides the defaults and smart columns. Only the columns you specify will be printed.
 Beginning this string with a '+' will cause the columns to be added to the default (and smart) columns instead of replacing them.

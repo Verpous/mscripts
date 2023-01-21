@@ -1,6 +1,6 @@
 #! python
 
-# Copyright (C) 2022 Aviv Edery.
+# Copyright (C) 2023 Aviv Edery.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -62,9 +62,10 @@ parser.add_argument('-u', default=False, action='store_true', help=
 parser.add_argument('--update', metavar='JSON', default=None, action='store', help=
     'Like -u, but you may specify a different file than the output JSON to compare against. This option overrides -u')
 parser.add_argument('-f', '--force', metavar='PATTERN', default=None, action='store', help=
-    'If -u/--update specified, forces titles that match PATTERN (case-insensitive) to be redownloaded even if they are already in the update JSON.'
-    ''' Intended for redownloading shows after a new season has come out.
-PATTERN uses regex syntax from python's re library, which is identical to egrep unless you use very advanced features''')
+    '''If -u/--update specified, forces titles that match PATTERN (case-insensitive) to be redownloaded even if they are already in the update JSON.
+It's enough for PATTERN to match any part of the title, not necessarily the whole title.
+PATTERN uses regex syntax from python's re library, which is identical to egrep unless you use very advanced features
+This feature is intended for redownloading shows after a new season has come out.''')
 parser.add_argument('-m', '--max', metavar='NUM', type=int, default=0x7FFFFFFF, action='store', help=
     'Specify how many movies to fetch. Mainly for debugging. Defaults to unbounded')
 parser.add_argument('-q', '--quiet', default=False, action='store_true', help=

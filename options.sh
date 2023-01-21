@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# Copyright (C) 2022 Aviv Edery.
+# Copyright (C) 2023 Aviv Edery.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -44,7 +44,7 @@
 # Variables can't include the characters '/', '\', or '&'.
 
 # We must capture these right away.
-options_src="$0"
+options_src="${BASH_SOURCE[1]}"
 options_argv=("$@")
 
 # Arg $1: A description of your mandatory arguments to be displayed by options::help in the usage line.
@@ -110,7 +110,7 @@ options::init() {
         }
 
         local width="$(tput cols)"
-        local prog="$(basename -- "$0")"
+        local prog="$(basename -- "$options_src")"
         local seds=()
         local i=0
         local var

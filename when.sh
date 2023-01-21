@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# Copyright (C) 2022 Aviv Edery.
+# Copyright (C) 2023 Aviv Edery.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,8 +28,7 @@
 ###     ##PROG -v +1y -3w 2s -5h  (what's the date 1 year, minus 3 weeks, plus 2 seconds, minus 5 hours from now, in verbose format)
 ###     ##PROG -d 1999-07-25 160d (what's the date 160 days from July 25, 1999)
 
-
-scripts="$(dirname "$0")"
+scripts="$(dirname -- "$BASH_SOURCE")"
 source "$scripts"/options.sh
 source "$scripts"/utils.sh
 shopt -s extglob
@@ -58,14 +57,14 @@ secs=0
 
 for arg in "$@"; do
     case "$arg" in
-        ?(+|-)+([0-9])) (( secs += 10#"$arg" * 60 * 60 * 24 )) ;; # Default is days.
-        ?(+|-)+([0-9])[sS]) (( secs += 10#"${arg::-1}" )) ;;
-        ?(+|-)+([0-9])[iI]) (( secs += 10#"${arg::-1}" * 60 )) ;;
-        ?(+|-)+([0-9])[hH]) (( secs += 10#"${arg::-1}" * 60 * 60 )) ;;
-        ?(+|-)+([0-9])[dD]) (( secs += 10#"${arg::-1}" * 60 * 60 * 24 )) ;;
-        ?(+|-)+([0-9])[wW]) (( secs += 10#"${arg::-1}" * 60 * 60 * 24 * 7 )) ;;
-        ?(+|-)+([0-9])[mM]) (( secs += 10#"${arg::-1}" * 60 * 60 * 24 * 30 )) ;;
-        ?(+|-)+([0-9])[yY]) (( secs += 10#"${arg::-1}" * 60 * 60 * 24 * 365 )) ;;
+        ?(+|-)+([0-9])) (( secs += "$arg" * 60 * 60 * 24 )) ;; # Default is days.
+        ?(+|-)+([0-9])[sS]) (( secs += "${arg::-1}" )) ;;
+        ?(+|-)+([0-9])[iI]) (( secs += "${arg::-1}" * 60 )) ;;
+        ?(+|-)+([0-9])[hH]) (( secs += "${arg::-1}" * 60 * 60 )) ;;
+        ?(+|-)+([0-9])[dD]) (( secs += "${arg::-1}" * 60 * 60 * 24 )) ;;
+        ?(+|-)+([0-9])[wW]) (( secs += "${arg::-1}" * 60 * 60 * 24 * 7 )) ;;
+        ?(+|-)+([0-9])[mM]) (( secs += "${arg::-1}" * 60 * 60 * 24 * 30 )) ;;
+        ?(+|-)+([0-9])[yY]) (( secs += "${arg::-1}" * 60 * 60 * 24 * 365 )) ;;
         *) utils::error "Invalid TIME: '$arg'. TIME syntax is (+|-)?[0-9]+[sihdwmy]? (case-insensitive)." ;;
     esac
 done

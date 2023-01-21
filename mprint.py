@@ -1,6 +1,6 @@
 #! python
 
-# Copyright (C) 2022 Aviv Edery.
+# Copyright (C) 2023 Aviv Edery.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -370,15 +370,15 @@ parser = argparse.ArgumentParser(
     description='Give this the output of mfetch.py and a crew type and it will print the movies organized by crewmembers.',
     epilog='Crew types, sort keys, group sort keys, and exclude keys all support many aliases so you can use similar words that make sense to you,'
     " and omit spaces or replace them with '-' or '_' (e.g., 'myrating', 'stunt_performer').")
-parser.add_argument('-G', '--group', choices=['yes', 'auto', 'no'], type=str.lower, default='auto', action='store', help=
-    'If yes, will group people who\'ve collaborated together. Default is auto, which uses a group mode that makes sense for CREW')
+parser.add_argument('-G', '--group', choices=['always', 'auto', 'never'], type=str.lower, default='auto', action='store', help=
+    'Choose whether to group people who\'ve collaborated together. Default is \'auto\', which uses a group mode that makes sense for CREW')
 parser.add_argument('-m', '--min', metavar='NUM', type=int, default=1, action='store', help=
     'Groups with fewer than NUM movies will not be printed. Defaults to unbounded')
 parser.add_argument('-s', '--sort', metavar='KEYS', type=sort_aliases, default=[sk_released, sk_alpha], action='store', help=
-    f'''Sort movies according to KEYS, which is a comma-delimited list of keys to sort by, in decreasing priority. Defaults to "released,alphabetical".
+    f'''Sort movies according to KEYS, which is a comma-delimited list of keys to sort by, in decreasing priority. Defaults to 'released,alphabetical'.
 Valid sort keys: {join_keys(valid_sort_keys)}''')
 parser.add_argument('-g', '--group-sort', metavar='KEYS', type=gsort_aliases, default=[gsk_nmovies, gsk_alpha], action='store', help=
-    f'''Sort groups according to KEYS, which is a comma-delimited list of keys to sort by, in decreasing priority. Defaults to "nmovies,alphabetical".
+    f'''Sort groups according to KEYS, which is a comma-delimited list of keys to sort by, in decreasing priority. Defaults to 'nmovies,alphabetical'.
 Valid group sort keys: {join_keys(valid_gsort_keys)}''')
 parser.add_argument('-p', '--print', default=False, action='store_true', help=
     'Print a list of valid crew types and exit')
@@ -413,7 +413,7 @@ reverse_movies = args.reverse_movies
 reverse_groups = args.reverse_groups
 min_length = args.min
 jsonfiles = ['-'] if len(args.JSON) == 0 else args.JSON
-group_mode = True if args.group == 'yes' else False if args.group == 'no' else default_grouping[crew_type]
+group_mode = True if args.group == 'always' else False if args.group == 'never' else default_grouping[crew_type]
 exclude_keys = args.exclude
 
 movies = set()

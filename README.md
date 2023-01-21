@@ -11,6 +11,7 @@
   - [mgrep](#mgrep)
   - [mbrowse](#mbrowse)
     - [Days Left](#days-left)
+  - [mdist](#mdist)
   - [What Else is Included?](#what-else-is-included)
   - [Installation](#installation)
   - [Notes](#notes)
@@ -146,7 +147,7 @@ Ethan Coen, Joel Coen:
     Blood Simple
 ```
 
-Because of this option, I make a distinction between **people** and **groups**. A person is just one guy, but a group is an entry like the one above which can be one or more people who collaborated. If you run mprint with `-G no`, then all groups will be 1-man groups and be no different than a person. By default mprint knows what group mode makes sense for each crew type so you do not need to specify it. Directors get grouped, actors don't, etc.
+Because of this option, I make a distinction between **people** and **groups**. A person is just one guy, but a group is an entry like the one above which can be one or more people who collaborated. If you run mprint with `-G never`, then all groups will be 1-man groups and be no different than a person. By default mprint knows what group mode makes sense for each crew type so you do not need to specify it. Directors get grouped, actors don't, etc.
 
 The `-g` (lowercase) flag from earlier stands for "group sort". You can sort groups in a number of ways, including even by the number of people in the group.
 
@@ -425,6 +426,27 @@ What's On MUBI tells you in how many days the movie is leaving relative to today
 
 Both mbrowse and when are capable of more than what I describe here. You can read the full description of what they can do with `-h`.
 
+## mdist
+
+mdist is a bash script that takes JSON arguments in the same way that mbrowse does, and outputs a diagram of how movies from the list distribute over time. You can check out the distribution of release dates or watched dates. You can check out how they distribute by year, day of the week, month of the year, or many more. For instance, if I run: `bash mdist.sh -p month-of-year movies`, I will get the distribution of the release dates of movies I've watched over months of the year:
+
+```
+    January| ============================================================ 60
+   February| =============================================== 47
+      March| ===================================================================== 69
+      April| ================================================ 48
+        May| ========================================================================================================================================= 137
+       June| ======================================================================================= 87
+       July| ==================================================================== 68
+     August| ===================================================================== 69
+  September| ================================================================================================================= 113
+    October| ======================================================== 56
+   November| =========================================================== 59
+   December| ================================================================================================================ 112
+```
+
+There are many options to this one, you can check them out with `-h`.
+
 ## What Else is Included?
 
 The repository also includes two additional scripts I haven't talked about: "options.sh" and "utils.sh". These are just Bash libraries I wrote to use in my scripts. The Bash scripts here depend on them, so you get to have them as a bonus. You could even use them in your own scripts.
@@ -462,7 +484,7 @@ command_not_found_handle() {
             found=true
             break
         fi
-    done < <(compgen -c "$1") # Generate possible autocompletions for the command.
+    done < <(compgen -c -- "$1") # Generate possible autocompletions for the command.
 
     $found && exec "$cmmnd" "${@:2}"
     echo "bash: '$1': command not found" >&2
