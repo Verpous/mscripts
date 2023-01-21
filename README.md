@@ -5,7 +5,7 @@
   - [mfetch](#mfetch)
   - [mprint](#mprint)
   - [mup](#mup)
-    - [mup \& Firefox](#mup--firefox)
+    - [mup \& Your Browser](#mup--your-browser)
     - [Configuration](#configuration)
     - [Options](#options)
   - [mgrep](#mgrep)
@@ -189,9 +189,9 @@ And the "all", "movies", "shows", "rated" directories will all look like this (b
 
 The names of these lists and categories is not important. Later I'll explain how to configure mup with your own lists and categories. You'll even be able to set defaults so you can simply run mup without arguments.
 
-### mup & Firefox
+### mup & Your Browser
 
-In order to automatically export your list to CSV, mup needs to request a URL from IMDb. But if the list is private, IMDb will refuse unless you are logged in. The way I was able to solve this problem is to make mup open up the URL in Firefox, where you are assumed to be already logged in. I wish I could have solved it better (if you want to help, please get in touch by opening an issue or something). What this means is that you need to have Firefox and be logged in to IMDb for mup to work. Also, when you run mup you'll get some leftover open tabs in Firefox that I haven't been able to close automatically.
+In order to automatically export your list to CSV, mup needs to request a URL from IMDb. But if the list is private, IMDb will refuse unless you are logged in. The way I was able to solve this problem is to make mup open up the URL in your default browser, where you are assumed to be already logged in. I wish I could have solved it better (if you want to help, please get in touch by opening an issue or something). What this means is that you need to be logged in to IMDb in your browser for mup to work. Also, when you run mup you'll get some leftover open tabs in your browser that I haven't been able to close automatically.
 
 ### Configuration
 
@@ -201,8 +201,7 @@ Next, you need to create some environment variables. Fill in the right values fo
 
 ```bash
 export MOVIES_DIR="path/to/movies"   # Path to the movies directory
-export MOVIES_FDIR="path/to/firefox" # Path to the firefox installation *directory*. This is a dirname!
-export MOVIES_FDOWNLOADS=~/Downloads # Path to where Firefox downloads files
+export MOVIES_DOWNLOADS=~/Downloads # Path to where your browser downloads files
 ```
 
 Next, create a file named **exactly** "mconfig.txt" in your movies directory. This is where you define your lists and categories. Here's a complete mconfig for example:
@@ -461,7 +460,6 @@ Just clone this repository and you can run the scripts. I recommend adding their
 
 * [Python](https://www.python.org/), for mfetch, mprint, and mbrowse. I don't know exactly what minimum version you need. It's best to go with something recent. I'm using 3.9.7
 * [Cinemagoer](https://cinemagoer.github.io/), for mfetch. You can simply `pip install cinemagoer`
-* [Firefox](https://www.mozilla.org/en-US/firefox/new/), for mup
 * Bash & GNU Coreutils (`grep`, `find`, `sed`, `mv`, `mktemp`, etc.), for mup and mgrep. Again, I don't know minimum versions. I'm on Bash 4.4.23. If you're on Linux, you probably already have these. If you're on Windows like me, you'll need to install them. I use [mingw-w64](https://www.mingw-w64.org/), which I've installed through [MSYS2](https://www.msys2.org/). [Git](https://git-scm.com/downloads) also comes bundled with Bash and some utils, which I think is sufficient and certainly easier to install.
 
 ## Notes

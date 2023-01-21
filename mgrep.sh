@@ -36,6 +36,7 @@ nmatches=""
 invert=""
 minimal=false
 mdir="$(path "${MOVIES_DIR:-.}")"
+exclude=$'\x18'"THIS PATTERN WILL NEVER MATCH"
 [[ -t 1 ]] && color=true || color=false
 handle_option() {
     case "$1" in
@@ -59,6 +60,9 @@ handle_option() {
             ;;
         v) ## Select non-matching people.
             invert="-v"
+            ;;
+        V) ## PATTERN ## Don't select people who match PATTERN. This is different from '-v', which inverts the pattern of people who *do* match.
+            exclude="$2"
             ;;
         x) ## Exclude full credits, print only people names (PATTERN is still matched against the full credits).
             minimal=true
@@ -184,7 +188,7 @@ for loc in "${where[@]}"; do
     sed -En "s/^$/$sep/ ; /^\S.*:$/,\$p" -- "$infile" | tr "\\n$sep" "$sep\\n" | cat <(echo -n "$sep") - | tee -- "$tmpfile" |
     # Steps 2 and 3. We match the pattern and then unflatten.
     # We don't restore it exactly to its original form, to achieve prettier output.
-    grep -E --color=$grepcolor $casing $invert $mflag -e "$pattern" | tr -d '\n' | tr "$sep" '\n' |
+    grep -Ev $casing -e "$exclude" | grep -E --color=$grepcolor $casing $invert $mflag -e "$pattern" | tr -d '\n' | tr "$sep" '\n' |
     # There were several bugs as a cause of patterns which match across multiple lines.
     # If lines get deleted, or we try to append the filename before each line, or whatever, it messes up the colors.
     # The solution is an algorithm which finds multi-line color blocks, and turns them into several single-line color blocks.

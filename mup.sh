@@ -36,9 +36,8 @@ do_fetch=true
 do_gen=true
 do_optimize=true
 mdir="$(path "${MOVIES_DIR:-.}")"
-fdir="$(path "${MOVIES_FDIR:-$PROGRAMFILES\\Mozilla Firefox}")"
 default_downloads=~/Downloads # Tilde expansion won't happen if we write this string directly in the line below.
-downloads="$(path "${MOVIES_FDOWNLOADS:-$default_downloads}")"
+downloads="$(path "${MOVIES_DOWNLOADS:-$default_downloads}")"
 popts=()
 fopts=()
 handle_option() {
@@ -53,10 +52,7 @@ handle_option() {
         c) ## FILE ## Configuration file for lists and categories. Defaults to '<movies-dir>/mconfig.txt', where <movies-dir> is the directory you modify with -m.
             config="$(path "$2")"
             ;;
-        b) ## DIR ## Directory where Firefox is installed on your computer. Defaults to MOVIES_FDIR env variable, or '$PROGRAMFILES/Mozilla Firefox/' if it doesn't exist.
-            fdir="$(path "$2")"
-            ;;
-        d) ## DIR ## The downloads directory used by Firefox. Defaults to MOVIES_FDOWNLOADS env variable, or '~/Downloads' if it doesn't exist.
+        d) ## DIR ## The downloads directory used by your web browser. Defaults to MOVIES_DOWNLOADS env variable, or '~/Downloads' if it doesn't exist.
             downloads="$(path "$2")"
             ;;
         f) ## Skip the step where mfetch is run to update the local JSONs. Use the JSONs that already exist in the movies directory.
@@ -80,8 +76,6 @@ options::getopts handle_option -1
 shift $OPTIONS_SHIFT
 
 [[ -d "$mdir" && -w "$mdir" ]] || utils::error "Movies directory '$mdir' doesn't exist or you do not have permissions for it"
-[[ -d "$fdir" ]] || utils::error "Firefox installation directory '$fdir' doesn't exist"
-[[ -f "$fdir"/firefox && -x "$fdir"/firefox ]] || utils::error "File '$fdir/firefox' doesn't exist or you do not have permissions for it"
 [[ -d "$downloads" && -w "$downloads" && -r "$downloads" ]] || utils::error "Downloads directory '$downloads' doesn't exist or you do not have permissions for it"
 [[ -v config ]] || config="$mdir/mconfig.txt"
 
@@ -132,7 +126,7 @@ fi
 (( $# == 0 )) && set -- "${!default_lists[@]}"
 (( $# == 0 )) && utils::error "No LIST provided and there are no defaults set up"
 
-# We'll use firefox to fetch the list export because the list is private and in firefox I am already signed in.
+# We'll use the browser to fetch the list export because some lists are private and in the browser you're already signed in.
 # But before, we have to know what's the current most recent csv in the downloads folder, so that we'll know when it changes.
 get_latest_csv() {
     find "$downloads" -maxdepth 1 -iname '*.csv' -printf '%B@ %f\0' | sort -znr | head -zn 1 | cut -zd ' ' -f 2- | head -c -1
@@ -150,9 +144,8 @@ fetch() {
     local timeout=20
     SECONDS=0
 
-    # I can't for the life of me figure out how to be logged in with cURL so we use Firefox where I'm assumed to be already logged in.
-    # I tried to at least run Firefox -headless, but no solution is as consistent as this.
-    "$fdir"/firefox "https://www.imdb.com/list/ls$lid/export?ref_=ttls_exp"
+    # I can't for the life of me figure out how to be logged in with cURL so we use the browser where you're assumed to be already logged in.
+    python -m webbrowser "https://www.imdb.com/list/ls$lid/export?ref_=ttls_exp" > /dev/null
 
     # We'll try to obtain the most recent csv in the downloads folder, until it's a different one than before we started downloading.
     while local in_csv="$(get_latest_csv)"; [[ "$initial_csv" == "$in_csv" ]]; do
