@@ -48,14 +48,14 @@ handle_option() {
                 always) color=true ;;
                 auto) ;; # Default, no action needed.
                 never) color=false ;;
-                *) utils::error "Invalid color mode: '$2'" ;;
+                *) utils::die "Invalid color mode: '$2'" ;;
             esac
             ;;
         H) ## Don't print the file name for each match.
             fnames=false
             ;;
         M) ## NUM ## Stop after NUM matches.
-            { (( nmatches = 10#"$2" )); } &> /dev/null || utils::error "Invalid max count: '$2'"
+            { (( nmatches = 10#"$2" )); } &> /dev/null || utils::die "Invalid max count: '$2'"
             limit=true
             ;;
         v) ## Select non-matching people.

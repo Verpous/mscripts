@@ -65,7 +65,7 @@ for arg in "$@"; do
         ?(+|-)+([0-9])[wW]) (( secs += "${arg::-1}" * 60 * 60 * 24 * 7 )) ;;
         ?(+|-)+([0-9])[mM]) (( secs += "${arg::-1}" * 60 * 60 * 24 * 30 )) ;;
         ?(+|-)+([0-9])[yY]) (( secs += "${arg::-1}" * 60 * 60 * 24 * 365 )) ;;
-        *) utils::error "Invalid TIME: '$arg'. TIME syntax is (+|-)?[0-9]+[sihdwmy]? (case-insensitive)." ;;
+        *) utils::die "Invalid TIME: '$arg'. TIME syntax is (+|-)?[0-9]+[sihdwmy]? (case-insensitive)." ;;
     esac
 done
 

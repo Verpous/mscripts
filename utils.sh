@@ -88,7 +88,7 @@ utils::stashsz() {
 }
 
 # Echoes "$@" to stderr and exits with status=1.
-utils::error() {
+utils::die() {
     echo "$@" >&2
     exit 1
 }

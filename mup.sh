@@ -75,8 +75,8 @@ options::init "[LIST]..."
 options::getopts handle_option -1
 shift $OPTIONS_SHIFT
 
-[[ -d "$mdir" && -w "$mdir" ]] || utils::error "Movies directory '$mdir' doesn't exist or you do not have permissions for it"
-[[ -d "$downloads" && -w "$downloads" && -r "$downloads" ]] || utils::error "Downloads directory '$downloads' doesn't exist or you do not have permissions for it"
+[[ -d "$mdir" && -w "$mdir" ]] || utils::die "Movies directory '$mdir' doesn't exist or you do not have permissions for it"
+[[ -d "$downloads" && -w "$downloads" && -r "$downloads" ]] || utils::die "Downloads directory '$downloads' doesn't exist or you do not have permissions for it"
 [[ -v config ]] || config="$mdir/mconfig.txt"
 
 declare -A default_lists=()
@@ -114,7 +114,7 @@ if [[ -f "$config" && -r "$config" ]]; then
             ?(\ )) # Empty lines are allowed and ignored.
                 ;;
             *)
-                utils::error "Line '$line' in the configuration file is not valid"
+                utils::die "Line '$line' in the configuration file is not valid"
                 ;;
         esac
     done < <(expand -t 1 -- "$config" | tr -s ' ' | cat - <(echo))
@@ -124,7 +124,7 @@ fi
 
 # Setting defaults if needed. Erroring out if there are none.
 (( $# == 0 )) && set -- "${!default_lists[@]}"
-(( $# == 0 )) && utils::error "No LIST provided and there are no defaults set up"
+(( $# == 0 )) && utils::die "No LIST provided and there are no defaults set up"
 
 # We'll use the browser to fetch the list export because some lists are private and in the browser you're already signed in.
 # But before, we have to know what's the current most recent csv in the downloads folder, so that we'll know when it changes.
@@ -220,7 +220,7 @@ for lname in "${uniqlists[@]}"; do
             fi
             ;;
         *)
-            utils::error "Invalid LIST: '$lname'"
+            utils::die "Invalid LIST: '$lname'"
             ;;
     esac
 done

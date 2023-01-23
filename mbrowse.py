@@ -353,7 +353,7 @@ def get_column(movie, col_key):
     if col_key == ck_runtime:
         return do(runtime_str, movie.get_runtime(), '-')
     if col_key == ck_released:
-        return str(movie.get_released().date() if verbose else movie.get_released().year)
+        return movie.get_released().strftime(rdate_fmt)
     if col_key == ck_rating:
         return str(movie.get_rating())
     if col_key == ck_votes:
@@ -361,7 +361,7 @@ def get_column(movie, col_key):
     if col_key == ck_metascore:
         return do(str, movie.get_metascore(), '-')
     if col_key == ck_watched:
-        return str(movie.get_watched().date())
+        return movie.get_watched().strftime(wdate_fmt)
     if col_key == ck_myrating:
         return do(str, movie.get_myrating(), '-')
     if col_key == ck_source:
@@ -377,9 +377,8 @@ def is_default(movie, xkey):
 # Assumes that input is valid. That means:
 # records is a matrix of strings (that is, a list of equal-length lists of strings).
 # use_colors is False or colors is a nonempty list of color codes.
-def tabulate(records, fillchar=' ', spacious=False, use_color=True, file=sys.stdin,
+def tabulate(records, fillchar=' ', spacious=False, use_color=True, underline_header=True, file=sys.stdin,
     fillcolor=  '\033[30;1m\033[K', # Gray
-    headercolor='\033[4m\033[K',    # Underline
     column_colors=[
                 '\033[39m\033[K',   # White
                 '\033[32;1m\033[K', # Green
@@ -397,6 +396,7 @@ def tabulate(records, fillchar=' ', spacious=False, use_color=True, file=sys.std
 
     # Setting it up so that the code following can be the same regardless of color usage.
     if use_color:
+        headercolor = '\033[4m\033[K' if underline_header else ''
         nocolor = '\033[m\033[K'
     else:
         column_colors=['']
@@ -480,10 +480,10 @@ parser.add_argument('-x', '--exclude', metavar='KEYS', type=exclude_aliases, def
 Valid exclude keys: {join_keys(valid_exclude_keys)}''')
 parser.add_argument('-c', '--color', choices=['always', 'auto', 'never'], default='auto', action='store', help=
     'Set whether columns should be colored')
-parser.add_argument('-d', '--dsv', default=False, action='store_true', help=
-    "Format output as delimiter-separated values. Causes '-c' to be ignored. See '-D' for more information")
-parser.add_argument('-D', '--delim', metavar='DELIM', default=',', action='store', help=
-    "Set the delimiter for '-d'. Defaults to commas (i.e., CSV)")
+parser.add_argument('-d', default=False, action='store_true', help=
+    "Output in comma-separated values format (CSV). Causes '-c' to be ignored")
+parser.add_argument('--dsv', metavar='DELIM', default=None, action='store', help=
+    "Output in delimiter-separated values format. Like '-d', but with a delimiter of your choice. This option takes precedence over '-d'")
 parser.add_argument('-C', '--columns', metavar='COLUMNS', type=column_aliases, action='store', default=(True, []), help=
     'List of columns to print, delimited by commas. Defaults to \'title,leaving,runtime,released,rating,metascore,director\','
     f''' with a few other "smart" columns which activate when a condition is met.
@@ -501,6 +501,10 @@ parser.add_argument('-S', '--spacious', default=False, action='store_true', help
     'Add an empty line between entries')
 parser.add_argument('-L', '--less', default=False, action='store_true', help=
     'Pipe output to less')
+parser.add_argument('-f', '--date-format', metavar='FORMAT', default=None, action='store', help=
+    'Override format for date columns. See python datetime.strftime documentation for format syntax')
+parser.add_argument('-t', '--titles', default=True, action='store_false', help=
+    'Don\'t print a row with the column titles')
 parser.add_argument('JSON', nargs='*', action='store', help=
     '''A list of input JSONs, which were output by mfetch.py. They will be treated as a single list of movies. Supports:
 1. '-' for standard input
@@ -515,15 +519,27 @@ If no JSON provided, use standard input.''')
 args = parser.parse_args()
 
 sort_keys = args.sort
-dsv = args.dsv
-delim = args.delim
+dsv = args.dsv != None or args.d
+delim = args.dsv if args.dsv != None else ','
 verbose = args.verbose
 reverse_all = args.reverse
 uniqify = args.unique
 spacious = args.spacious
 less = args.less
 exclude_keys = args.exclude
+titles = args.titles
 jsonfiles = ['-'] if len(args.JSON) == 0 else args.JSON
+date_fmt = args.date_format
+
+# Quick check that the format is valid.
+if date_fmt != None:
+    try:
+        datetime.datetime.now().strftime(date_fmt)
+    except ValueError:
+        sys.exit(f"Invalid FORMAT: '{date_fmt}'")
+
+rdate_fmt = date_fmt if date_fmt != None else "%Y-%m-%d" if verbose else "%Y"
+wdate_fmt = date_fmt if date_fmt != None else "%Y-%m-%d"
 
 if args.color == 'always':
     color=True
@@ -617,9 +633,10 @@ column_titles = {
     ct_stunt_performer: 'Stunt Actors',
 }
 
-dummy = Movie(None, None)
-dummy.record = [column_titles[ck] for ck in column_keys]
-movies.insert(0, dummy)
+if titles:
+    dummy = Movie(None, None)
+    dummy.record = [column_titles[ck] for ck in column_keys]
+    movies.insert(0, dummy)
 
 # Pipe to less if requested. I tried a lot of variations including of course Popen(stdin=PIPE), this is the only one that works.
 with tempfile.NamedTemporaryFile('w', encoding='utf-8') if less else sys.stdout as f:
@@ -628,7 +645,8 @@ with tempfile.NamedTemporaryFile('w', encoding='utf-8') if less else sys.stdout 
         writer = csv.writer(f, delimiter=delim)
         writer.writerows(movie.record for movie in movies)
     else:
-        tabulate([movie.record for movie in movies], fillchar='.' if color else ' ', spacious=spacious, use_color=color, file=f)
+        tabulate([movie.record for movie in movies], fillchar='.' if color else ' ', 
+            spacious=spacious, use_color=color, underline_header=titles, file=f)
     
     f.flush()
 

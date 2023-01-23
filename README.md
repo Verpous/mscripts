@@ -16,7 +16,7 @@
   - [Installation](#installation)
   - [Notes](#notes)
 
-This is a set of tools I wrote to squeeze all the juice out of my IMDb lists, right from the command line. Using mscripts, you can quickly answer questions like "where else have I seen this actor?", pick what movie to watch tonight, and more.
+This is a set of tools I wrote to squeeze all the juice out of my IMDb lists, right from the command line. Using mscripts, you can quickly answer questions like "where else have I seen this actor?", "how many movies have I seen this year", pick what movie to watch tonight, and more.
 
 All the tools are command line tools. To use their full power, you need to be comfortable with this. If you're not, there's only a single 3-letter command you need to remember to still make good use of them.
 
