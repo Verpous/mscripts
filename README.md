@@ -427,21 +427,22 @@ Both mbrowse and when are capable of more than what I describe here. You can rea
 
 ## mdist
 
-mdist is a bash script that takes JSON arguments in the same way that mbrowse does, and outputs a diagram of how movies from the list distribute over time. You can check out the distribution of release dates or watched dates. You can check out how they distribute by year, day of the week, month of the year, or many more. For instance, if I run: `bash mdist.sh -p month-of-year movies`, I will get the distribution of the release dates of movies I've watched over months of the year:
+mdist is a bash script that takes JSON arguments in the same way that mbrowse does, and outputs a diagram of how movies from the list distribute over a parameter of your choice. You can check out the distribution of what days you watch movies on, rating distributions, and many more. For instance, if I run: `bash mdist.sh release-month-of-year movies`, I will get the distribution of when movies I've seen were released in the year:
 
 ```
-    January| ============================================================ 60
-   February| =============================================== 47
-      March| ===================================================================== 69
-      April| ================================================ 48
-        May| ========================================================================================================================================= 137
-       June| ======================================================================================= 87
-       July| ==================================================================== 68
-     August| ===================================================================== 69
-  September| ================================================================================================================= 113
-    October| ======================================================== 56
-   November| =========================================================== 59
-   December| ================================================================================================================ 112
+Number of Movies Released Per Month of a Year
+    January|============================================================ 60
+   February|=============================================== 47
+      March|===================================================================== 69
+      April|================================================ 48
+        May|========================================================================================================================================== 138
+       June|======================================================================================= 87
+       July|==================================================================== 68
+     August|====================================================================== 70
+  September|================================================================================================================== 114
+    October|======================================================== 56
+   November|============================================================ 60
+   December|================================================================================================================= 113
 ```
 
 There are many options to this one, you can check them out with `-h`.
