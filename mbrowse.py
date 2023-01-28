@@ -22,8 +22,12 @@
 #    Then for mpeople, you could create a totally new script with mbrowse-like output but instead of being movie focused, make it people-focused.
 #    Like, each line would be: person, number of movies, number of groups he belongs in, average rating, average metascore, average myrating, years active,
 #    oldest movie, youngest movie, top rated movie by rating/metascore/myrating, worst rated movie by rating/metascore/myrating, there's a lot we could do...
-#    Problems with this: where do you show groups, how do you stay concise?
-#    As a partial step in this direction, I can add an option to mbrowse which tells it to make entries per person per movie, per crew type column which is to be printed??
+#    Basically mbrowse should have 3 options: pivot around movies, pivot around a crew type, and pivot around both
+#    In pivot around a crew type, you run the grouping algorithm and then show rows of groups and info about them
+#    Pivot around movies is what mbrowse currently does
+#    Pivot around both means: run grouping, for each group create a row for each movie that group has done, support both columns with info about the movie and columns with info about the group
+#    Instead of caching mprint output for mgrep, switch to running the grouping algorithm and caching that.
+#    
 # * Refactor: add a Key class which specifies its aliases and maybe extra data like "should be sorted" (for crew type columns).
 #    This way you eliminate the code repetition when using the same key in multiple key types.
 # * Refactor: pick one of mbrowse or mprint to double as a library when not run with __name__ == "main".
