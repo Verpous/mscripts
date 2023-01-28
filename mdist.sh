@@ -103,11 +103,11 @@ handle_option() {
         t) ## Don't print a title.
             title=false
             ;;
-        k) ## Append the key to the end of each bar.
-            append_key=1
-            ;;
-        K) ## Don't write the key at the start of each bar.
+        k) ## Don't write the key at the start of each bar.
             prepend_key=0
+            ;;
+        K) ## Append the key to the end of each bar.
+            append_key=1
             ;;
     esac
 }
