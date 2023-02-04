@@ -45,12 +45,11 @@
 ### The 'monday' distributions treat Monday as the first day of the week. By default Sunday is the first day.
 ### 
 ### About -g, -v: for release and watched distributions, the pattern is matched against the respective date in YYYY-MM-DD format.
-###> For crew-size, it's the list of crew members where crew types are separated with pipes '|', and members with commas ','.
-###> For votes, it's the number of votes as printed by mbrowse --verbose.
-###> For the rest, it's matched against the respective value as it is printed by mbrowse.
+###> For crew-size, it's the output of 'mbrowse --dsv "|" --verbose --columns <the desired crew types>'
+###> For the rest, it's matched against the respective value as it is printed by 'mbrowse --verbose'.
 
 # Try to maintain this list of all distributions. It's helpful for debugging.
-# arr=(release-year release-month release-day release-month-of-year release-week-of-year release-week-of-year-monday release-day-of-year release-day-of-month release-day-of-week release-day-of-week-monday watch-year watch-month watch-day watch-month-of-year watch-week-of-year watch-week-of-year-monday watch-day-of-year watch-day-of-month watch-day-of-week watch-day-of-week-monday leaving rating rating-granular my-rating metascore metascore-granular crew-size title-length run-time votes votes-granular crew-size-granular run-time-granular)
+# release-year release-month release-day release-month-of-year release-week-of-year release-week-of-year-monday release-day-of-year release-day-of-month release-day-of-week release-day-of-week-monday watch-year watch-month watch-day watch-month-of-year watch-week-of-year watch-week-of-year-monday watch-day-of-year watch-day-of-month watch-day-of-week watch-day-of-week-monday leaving rating rating-granular my-rating metascore metascore-granular crew-size title-length run-time votes votes-granular crew-size-granular run-time-granular
 
 scripts="$(dirname -- "$BASH_SOURCE")"
 source "$scripts"/options.sh
@@ -114,7 +113,7 @@ handle_option() {
 
 options::init "DISTRIBUTION [JSON]..."
 options::getopts handle_option 1
-shift $OPTIONS_SHIFT
+shift $options_shift
 
 case "${1,,}" in
     # All start with 'd', then the key to distribute on, then the distribution.
@@ -252,6 +251,8 @@ case "$distribution" in
     d_crew_granular)                        spacepad=5   namefunc=identity     ;;
     d_title)                                spacepad=4   namefunc=identity     ;;
     d_runtime_granular)                     spacepad=5   namefunc=identity     ;;
+    d_@(release|watch)_day)                 spacepad=10  namefunc=identity     ;;
+    d_@(release|watch)_month)               spacepad=7   namefunc=identity     ;;
     *)                                      spacepad=1   namefunc=identity     ;;
 esac
 

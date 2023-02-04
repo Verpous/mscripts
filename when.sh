@@ -51,7 +51,7 @@ handle_option() {
 
 options::init "TIME..."
 options::getopts handle_option 1
-shift $OPTIONS_SHIFT
+shift $options_shift
 
 secs=0
 

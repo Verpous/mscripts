@@ -73,7 +73,7 @@ handle_option() {
 
 options::init "[LIST]..."
 options::getopts handle_option -1
-shift $OPTIONS_SHIFT
+shift $options_shift
 
 [[ -d "$mdir" && -w "$mdir" ]] || utils::die "Movies directory '$mdir' doesn't exist or you do not have permissions for it"
 [[ -d "$downloads" && -w "$downloads" && -r "$downloads" ]] || utils::die "Downloads directory '$downloads' doesn't exist or you do not have permissions for it"

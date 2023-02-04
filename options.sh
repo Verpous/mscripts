@@ -44,38 +44,40 @@
 # Variables can't include the characters '/', '\', or '&'.
 
 # We must capture these right away.
-options_src="${BASH_SOURCE[1]}"
-options_argv=("$@")
+__options_src="${BASH_SOURCE[1]}"
+__options_argv=("$@")
 
-# Arg $1: A description of your mandatory arguments to be displayed by options::help in the usage line.
-# Args $2..${11}: Values that the comment variables ##0...##9 will expand to.
+# options::init POSITIONAL [VALUE]...
 # Initializes options, which means you gain access to the other functions here.
+# POSITIONAL is the usage string for positional arguments.
+# VALUEs are assigned to variables ##0...##9, respectively.
 options::init() {
-    options_mandatory="$1"
-    options_variables=("${@:2}")
+    __options_positional="$1"
+    __options_variables=("${@:2}")
 
     # Generating the options string for getopts from the case statements in the source file.
     # Options which specify a metavar are turned into options with an argument, the rest are without.
-    options_optstring=:"$(sed -En '/^\s*([^[:space:]#:?*])\)\s+##\s/ { 
+    __options_optstring=:"$(command sed -En '/^\s*([^[:space:]#:?*])\)\s+##\s/ { 
                                        s/^\s*(.)\)\s+##\s(\s*\w+\s*##\s)?.*$/\1\2/
                                        /../s/(.).*/\1:/
                                        p
-                                   }' -- "$options_src" | tr -d '\n')"
+                                   }' -- "$__options_src" | tr -d '\n')"
 
     # Automatically support help option. Error out if h option given.
-    [[ "$options_optstring" =~ h ]] && { echo "Error: option 'h' is reserved" >&2; exit 1; }
-    options_optstring+=h
+    [[ "$__options_optstring" =~ h ]] && { echo "Error: option 'h' is reserved" >&2; exit 1; }
+    __options_optstring+=h
 
     # All functions besides init are nested here so that they are only defined if initialized.
-    # No arguments. Prints help and exits.
+    # options::help
+    # Prints help and exits.
     options::help() {
         # Most of the work is done in this subroutine, because we want to take all its output and pipe it through some extra stuff.
         options::help_internal() {
             # Printing the Usage line.
-            echo "Usage: ##PROG [$(tr -d ":" <<< "$options_optstring")]... $options_mandatory"
+            echo "Usage: ##PROG [$(command tr -d ":" <<< "$__options_optstring")]... $__options_positional"
             
             # Prologue. That weird first expression in the second sed adds an extra newline if the description isn't empty.
-            sed -En '/^##>?\s/p' -- "$options_src" | sed -Ez 's/^./\n&/ ; s/\n##>\s/ /g ; s/(^|\n)##\s/\1/g'
+            command sed -En '/^##>?\s/p' -- "$__options_src" | sed -Ez 's/^./\n&/ ; s/\n##>\s/ /g ; s/(^|\n)##\s/\1/g'
             echo
 
             # Now for the options help lines. It's a big pipeline.
@@ -83,12 +85,12 @@ options::init() {
             # I'll walk you through the pipeline step by step:
             # First sed, discards all non-comment lines from the file, and does some initial processing on comment lines. New-line comments are fully processed and ready to go after this.
             # After each comment type, there is a 't' statement which skips ahead to the next line so we don't accidentally read another comment type on the same line.
-            sed -En 's/^\s*([^[:space:]#:?*])\)\s+##\s/  -\1 /p ; t ; s/^\s+##\s/                /p ; t ; s/^\s+##>\s/##>/p' -- "$options_src" |
+            command sed -En 's/^\s*([^[:space:]#:?*])\)\s+##\s/  -\1 /p ; t ; s/^\s+##\s/                /p ; t ; s/^\s+##>\s/##>/p' -- "$__options_src" |
                 # Second sed, this one is for continuation comments. It uses -z to treat the whole stream as a single line, joins continuation comments to their previous line.
-                sed -Ez 's/\n##>/ /g' |
+                command sed -Ez 's/\n##>/ /g' |
                 # Awk for some heavy processing w.r.t. case-line comments. We need to catch optional metavars, discard all the garbage syntax around them, and align the text with spaces.
                 # Case-line comments without a metavar also receive space-alignment, but it's much simpler.
-                gawk '/^  -.\s+\w+\s*##\s/ {
+                command gawk '/^  -.\s+\w+\s*##\s/ {
                         match($0, /^  -.\s+(\w+)/, dest)
                         spc_len = dest[1, "length"] <= 9 ? 9 - dest[1, "length"] : 0
                         spaces = sprintf("%*s", spc_len, "")
@@ -106,11 +108,11 @@ options::init() {
                     END { print "  -h            Display this help and exit." }'
 
             # Now doing the epilogue. It's the same as the intro, but with 3 #'s instead of 2.
-            sed -En '/^###>?\s/p' -- "$options_src" | sed -Ez 's/^./\n&/ ; s/\n###>\s/ /g ; s/(^|\n)###\s/\1/g'
+            command sed -En '/^###>?\s/p' -- "$__options_src" | sed -Ez 's/^./\n&/ ; s/\n###>\s/ /g ; s/(^|\n)###\s/\1/g'
         }
 
-        local width="$(tput cols)"
-        local prog="$(basename -- "$options_src")"
+        local width="$(command tput cols)"
+        local prog="$(command basename -- "$__options_src")"
         local seds=()
         local i=0
         local var
@@ -124,23 +126,24 @@ options::init() {
         options::add_variable PROG "$prog"
         options::add_variable NAME "${prog%.*}"
 
-        for var in "${options_variables[@]}"; do
+        for var in "${__options_variables[@]}"; do
             options::add_variable "$i" "$var"
             (( i++ ))
         done
 
         # Expanding variables and formatting the entire thing.
-        options::help_internal | sed -E "${seds[*]}" | fmt "-$width" -s
+        options::help_internal | command sed -E "${seds[*]}" | command fmt "-$width" -s
         unset -f options::help_internal
         unset -f options::add_variable
         exit 0
     }
 
-    # Arg 1: The name of an option handler function. It is invoked with $1=the option character, $2=the option's argument (if it takes one).
-    # Arg 2: The number of mandatory arguments your script takes. In case of fewer arguments, will exit with help. Pass a negative value to ignore this.
-    # Invokes the handler on all option arguments, then sets $OPTIONS_SHIFT to the number you should pass to 'shift' to discard the processed arguments.
+    # options::getopts HANDLER MANDATORYNUM
+    # Parses options and invokes HANDLER on each one with $1=the option character, $2=the option's argument (if it takes one).
+    # Exits with help if there are fewer than MANDATORYNUM positional arguments provided. Pass a negative value to ignore.
+    # Sets $options_shift to the number you should pass to 'shift' to discard the processed arguments.
     options::getopts() {
-        while getopts "$options_optstring" arg "${options_argv[@]}"; do
+        while getopts "$__options_optstring" arg "${__options_argv[@]}"; do
             case "$arg" in
                 h)
                     options::help
@@ -161,7 +164,13 @@ options::init() {
             esac
         done
 
-        OPTIONS_SHIFT=$(( OPTIND - 1 ))
-        (( "$2" >= 0 && "$2" > ${#options_argv[@]} - OPTIONS_SHIFT )) && options::help
+        options_shift=$(( OPTIND - 1 ))
+        (( "$2" >= 0 && "$2" > ${#__options_argv[@]} - options_shift )) && options::help
+    }
+
+    # options::optstring
+    # Returns the options string that getopts accepts.
+    options::get_optstring() {
+        echo -n "$__options_optstring"
     }
 }

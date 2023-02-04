@@ -81,7 +81,7 @@ handle_option() {
 
 options::init "PATTERN [WHERE]..."
 options::getopts handle_option 1
-shift $OPTIONS_SHIFT
+shift $options_shift
 pattern="$1"
 shift
 

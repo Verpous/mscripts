@@ -19,7 +19,8 @@
 # All functions implemented here should make sure to skip aliases and function names with the "command" builtin.
 # I've made the decision to not protect against shadowed builtins. Don't go overriding builtins, yo.
 
-# Returns the string $1 repeated $2 times.
+# utils::repeat STRING REPEATS
+# Returns STRING repeated REPEATS times.
 utils::repeat() {
     local s=""
 
@@ -30,7 +31,8 @@ utils::repeat() {
     echo -n "$s"
 }
 
-# Returns the time it takes the command ${@:2} to run when averaged over $1 times.
+# Returns the time it takes COMMAND to run when averaged over ITERATIONS times.
+# utils::avgtime ITERATIONS COMMAND...
 utils::avgtime() {
     local repeats="$1"
     for (( i = 0 ; i < $repeats; i++ )); do
@@ -55,7 +57,8 @@ utils::avgtime() {
     }' | command column --table -N \ ,avg,total
 }
 
-# Joins the arguments ${@:2} with the delimiter $1. Accepts backslash escapes in $1.
+# utils::join DELIM [ELEMENT]...
+# Returns all ELEMENTs with DELIM separators.
 utils::join() {
     (( $# == 1 )) && return
     local d="$1"
@@ -66,7 +69,8 @@ utils::join() {
     done
 }
 
-# Creates an array called $1 which contains the arguments ${@:2} in reverse.
+# utils::reverse ARRAY [ELEMENT]...
+# Creates an array called ARRAY which contains all ELEMENTs in reverse.
 utils::reverse() {
     local dest="$1"
     declare -n dest
@@ -77,39 +81,47 @@ utils::reverse() {
     done
 }
 
-# Returns success if "$1" is in "${@:2}"
+# utils::contains VALUE ELEMENT...
+# Returns success if one of ELEMENTs is equal to VALUE.
 utils::contains() {
     printf "%s\0" "${@:2}" | command grep -Fxqz "$1"
 }
 
+# utils::stashsz
 # Returns the size of the git stash.
 utils::stashsz() {
     command git rev-list --walk-reflogs --count refs/stash 2> /dev/null || echo 0
 }
 
-# Echoes "$@" to stderr and exits with status=1.
+# utils::die MESSAGE
+# Prints MESSAGE to stderr and exits with failure.
 utils::die() {
-    echo "$@" >&2
+    printf "%s\n" "$*" >&2
     exit 1
 }
 
+# utils::confirm PROMPT
+# Reads a string with the prompt PROMPT and returns success if it begins with a Y (case-insensitive), otherwise failure.
 utils::confirm() {
     local confirm
     read -p "$1 " confirm # Add a space at the end.
     [[ "$confirm" == *([[:space:]])[yY]* ]]
 }
 
-# Returns the min of all arguments (all must be numerical).
+# utils::min [NUM]...
+# Returns the smallest of all NUMs.
 utils::min() {
     printf "%d\n" "$@" | command sort -n | command head -n 1
 }
 
-# Returns the max of all arguments (all must be numerical).
+# utils::max [NUM]...
+# Returns the largest of all NUMs.
 utils::max() {
     printf "%d\n" "$@" | command sort -n | command tail -n 1
 }
 
-# Returns $1 clamped into the interval [$2, $3].
+# utils::clamp VALUE MIN MAX
+# Returns VALUE, but no less than MIN and no more than MAX.
 utils::clamp() {
     local value="$1"
     local min="$2"
@@ -117,12 +129,14 @@ utils::clamp() {
     echo "$(( "$value" < "$min" ? "$min" : "$value" > "$max" ? "$max" : "$value" ))"
 }
 
-# Returns the sign of $1 (-1, 0, or 1).
+# utils::sign NUM
+# Returns the sign of NUM (-1, 0, or 1).
 utils::sign() {
     utils::clamp "$1" -1 1
 }
 
-# Divides $1 by $2 with floor and returns the result.
+# utils::div_floor NUMERATOR DENOMINATOR
+# Divides NUMERATOR by DENOMINATOR with floor and returns the result.
 # Bash division operator is only floor for positive numbers. This is for negatives too.
 utils::div_floor() {
     local nume_sign="$(utils::sign "$1")"
@@ -132,7 +146,8 @@ utils::div_floor() {
     echo "$(( (nume_sign * deno_sign) * (nume / deno) - (nume_sign != deno_sign && nume % deno != 0) ))"
 }
 
-# Divides $1 by $2 with ceiling and returns the result.
+# utils::div_ceil NUMERATOR DENOMINATOR
+# Divides NUMERATOR by DENOMINATOR with ceiling and returns the result.
 utils::div_ceil() {
     # div_ceil() == -div_floor(a, -b)
     echo "$(( -"$(utils::div_floor "$1" -"$2" )" ))"
