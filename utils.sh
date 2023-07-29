@@ -77,14 +77,20 @@ utils::reverse() {
     dest=()
     
     for (( i = $#; i > 1; i-- )); do
-        dest[$(( $# - i ))]="${!i}"
+        dest[$# - i]="${!i}"
     done
 }
 
 # utils::contains VALUE ELEMENT...
 # Returns success if one of ELEMENTs is equal to VALUE.
 utils::contains() {
-    printf "%s\0" "${@:2}" | command grep -Fxqz "$1"
+    local arg
+    
+    for arg in "${@:2}"; do
+        [[ "$arg" == "$1" ]] && return 0
+    done
+
+    return 1
 }
 
 # utils::stashsz

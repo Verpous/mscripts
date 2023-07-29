@@ -15,25 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-# TODO: I'm running out of steam here but I'll write down ideas for the future:
-# * A whole new take on mscripts: forget mpeople and mgrep,
-#    all you need is mbrowse-like output with an entry not just per movie but per person per movie, with a file per crew type.
-#    This easily combines with regular grep, and could even combine with awk if we introduce a good separator character (option that's shorthand for -d $'\x1F'?).
-#    Then for mpeople, you could create a totally new script with mbrowse-like output but instead of being movie focused, make it people-focused.
-#    Like, each line would be: person, number of movies, number of groups he belongs in, average rating, average metascore, average myrating, years active,
-#    oldest movie, youngest movie, top rated movie by rating/metascore/myrating, worst rated movie by rating/metascore/myrating, there's a lot we could do...
-#    Basically mbrowse should have 3 options: pivot around movies, pivot around a crew type, and pivot around both
-#    In pivot around a crew type, you run the grouping algorithm and then show rows of groups and info about them
-#    Pivot around movies is what mbrowse currently does
-#    Pivot around both means: run grouping, for each group create a row for each movie that group has done, support both columns with info about the movie and columns with info about the group
-#    Instead of caching mprint output for mgrep, switch to running the grouping algorithm and caching that.
-#    
-# * Refactor: add a Key class which specifies its aliases and maybe extra data like "should be sorted" (for crew type columns).
-#    This way you eliminate the code repetition when using the same key in multiple key types.
-# * Refactor: pick one of mbrowse or mprint to double as a library when not run with __name__ == "main".
-#    Put all the code there that is shared between different scripts, and import it from the other scripts to eliminate code repetition.
-# * Expand mconfig to include default mbrowse options, parse mconfig in here and support mbrowsing categories.
-
 import json
 import sys
 import datetime
@@ -41,7 +22,6 @@ import argparse
 import tempfile
 import os
 import csv
-import tempfile
 import subprocess
 
 try:
@@ -477,23 +457,23 @@ parser = argparse.ArgumentParser(
 About the "leaving" sort option: if you set the movie's description in IMDb to a date in the format YYYY-MM-DD (e.g. 2023-07-25), this option will sort by that date.
 I set the descriptions to the dates I know movies in my watchlist will be leaving streaming services, so I can prioritize watching them before they're gone.''')
 parser.add_argument('-s', '--sort', metavar='KEYS', type=sort_aliases, default=[sk_leaving, sk_runtime, sk_alpha], action='store', help=
-    f'''Sort movies according to KEYS, which is a comma-delimited list of keys to sort by, in decreasing priority. Defaults to 'leaving,runtime,alphabetical'.
+    f'''Sort movies according to %(metavar)s, which is a comma-delimited list of keys to sort by, in decreasing priority. Defaults to 'leaving,runtime,alphabetical'.
 Valid sort keys: {join_keys(valid_sort_keys)}''')
 parser.add_argument('-x', '--exclude', metavar='KEYS', type=exclude_aliases, default=[], action='store', help=
-    f'''Exclude movies which don't have a value for any one of KEYS, which is a comma-delimited list of keys. Defaults to no exclusions.
+    f'''Exclude movies which don't have a value for any one of %(metavar)s, which is a comma-delimited list of keys. Defaults to no exclusions.
 Valid exclude keys: {join_keys(valid_exclude_keys)}''')
 parser.add_argument('-c', '--color', choices=['always', 'auto', 'never'], default='auto', action='store', help=
-    'Set whether columns should be colored')
+    'Set whether columns should be colored. Defaults to %(default)s')
 parser.add_argument('-d', default=False, action='store_true', help=
     "Output in comma-separated values format (CSV). Causes '-c' to be ignored")
 parser.add_argument('--dsv', metavar='DELIM', default=None, action='store', help=
-    "Output in delimiter-separated values format. Like '-d', but with a delimiter of your choice. This option takes precedence over '-d'")
+    "Output in delimiter-separated values format (DSV). Like '-d', but with a delimiter of your choice. This option takes precedence over '-d'")
 parser.add_argument('-C', '--columns', metavar='COLUMNS', type=column_aliases, action='store', default=(True, []), help=
     'List of columns to print, delimited by commas. Defaults to \'title,leaving,runtime,released,rating,metascore,director\','
     f''' with a few other "smart" columns which activate when a condition is met.
 This option overrides the defaults and smart columns. Only the columns you specify will be printed.
 Beginning this string with a '+' will cause the columns to be added to the default (and smart) columns instead of replacing them.
-If COLUMNS is '*', will print all columns.
+If %(metavar)s is '*', will print all columns.
 Valid column names: {join_keys(valid_column_keys)}''')
 parser.add_argument('-v', '--verbose', default=False, action='store_true', help=
     'Use verbose output, like writing the full release date instead of just the year, and not chopping long strings')
@@ -506,16 +486,16 @@ parser.add_argument('-S', '--spacious', default=False, action='store_true', help
 parser.add_argument('-L', '--less', default=False, action='store_true', help=
     'Pipe output to less')
 parser.add_argument('-f', '--date-format', metavar='FORMAT', default=None, action='store', help=
-    'Override format for date columns. See python datetime.strftime documentation for format syntax')
-parser.add_argument('-t', '--titles', default=True, action='store_false', help=
+    'Override format for date columns. Default depends on verbosity and which column. See python datetime.strftime documentation for format syntax')
+parser.add_argument('-t', '--no-titles', default=False, action='store_true', help=
     'Don\'t print a row with the column titles')
 parser.add_argument('JSON', nargs='*', action='store', help=
-    '''A list of input JSONs, which were output by mfetch.py. They will be treated as a single list of movies. Supports:
+    '''A list of input %(dest)ss, which were output by mfetch.py. They will be treated as a single list of movies. Supports:
 1. '-' for standard input
 2. Absolute paths, paths relative to the current directory
 3. Paths relative to the directory pointed to by the MOVIES_DIR environment variable
 In all forms the .json extension can optionally be omitted.
-If no JSON provided, use standard input.''')
+If no %(dest)s provided, use standard input.''')
 
 # With no JSON, or when JSON is -, use standard input.
 # Will search for matching filenames with a ".json" extension if you omit it.
@@ -531,7 +511,7 @@ uniqify = args.unique
 spacious = args.spacious
 less = args.less
 exclude_keys = args.exclude
-titles = args.titles
+titles = not args.no_titles
 jsonfiles = ['-'] if len(args.JSON) == 0 else args.JSON
 date_fmt = args.date_format
 

@@ -123,9 +123,9 @@ unset GREP_COLORS GREP_COLOR
 
 if $color; then
     # Same colors that grep uses.
-    purple=$'\033[35m\033[K'
-    blue=$'\033[36m\033[K'
-    nocolor=$'\033[m\033[K'
+    purple="$(tput setaf 5)"
+    blue="$(tput setaf 6)"
+    nocolor="$(tput sgr0)"
     grepcolor=always
 else
     purple=""
@@ -136,15 +136,16 @@ fi
 
 if $minimal; then
     # In minimal mode we want to get rid of any lines that aren't a person's name (including empty lines).
-    strip='/^[[:space:]]{4}/d;/^$/d'
+    strip='/^[[:space:]]{4}/d ; /^$/d'
 
     # If color is on we need to strip color from the line in order to pattern match it,
     # but restore color to lines which aren't deleted.
-    $color && strip=$'h;s/\033[[]01;31m\033[[]K|\033[[]m\033[[]K//g;'"$strip;g"
+    $color && strip=$'h ; s/\033[[]01;31m\033[[]K|\033[[]m\033[[]K//g ; '"$strip ; g"
 else
     strip=""
 fi
 
+trap 'rm -- "$tmpfile"' EXIT
 lastcount=0
 tmpfile="$(mktemp)"
 
@@ -218,5 +219,3 @@ for loc in "${where[@]}"; do
     # This is what we need tmpfile for.
     $limit && lastcount="$(grep -Ec $casing $invert $mflag -e "$pattern" -- "$tmpfile")"
 done
-
-rm -- "$tmpfile"

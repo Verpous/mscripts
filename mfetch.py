@@ -62,20 +62,20 @@ parser.add_argument('-u', default=False, action='store_true', help=
 parser.add_argument('--update', metavar='JSON', default=None, action='store', help=
     'Like -u, but you may specify a different file than the output JSON to compare against. This option overrides -u')
 parser.add_argument('-f', '--force', metavar='PATTERN', default=None, action='store', help=
-    '''If -u/--update specified, forces titles that match PATTERN (case-insensitive) to be redownloaded even if they are already in the update JSON.
-It's enough for PATTERN to match any part of the title, not necessarily the whole title.
-PATTERN uses regex syntax from python's re library, which is identical to egrep unless you use very advanced features
-This feature is intended for redownloading shows after a new season has come out.''')
+    '''If -u/--update specified, forces titles that match %(metavar)s (case-insensitive) to be redownloaded even if they are already in the update JSON.
+It's enough for %(metavar)s to match any part of the title, not necessarily the whole title.
+%(metavar)s uses regex syntax from python's re library, which is identical to egrep unless you use very advanced features.
+This feature is intended for redownloading shows after a new season has come out''')
 parser.add_argument('-m', '--max', metavar='NUM', type=int, default=0x7FFFFFFF, action='store', help=
-    'Specify how many movies to fetch. Mainly for debugging. Defaults to unbounded')
+    'Fetch no more than %(metavar)s movies. Mainly for debugging. Defaults to unbounded')
 parser.add_argument('-q', '--quiet', default=False, action='store_true', help=
     'Be quiet. Don\'t output anything other than the JSON to standard output')
 parser.add_argument('CSV', action='store', help=
     'A CSV export of an IMDb list. If -, use standard input')
 parser.add_argument('JSON', nargs='?', default=None, action='store', help=
     '''A JSON file to output to. Defaults to the same name as the input file but with type .json.
-If JSON is -, use standard output. If you use standard output, you'll probably also want to use -q.
-If CSV is -, JSON must be specified''')
+If %(dest)s is -, use standard output. If you use standard output, you'll probably also want to use -q.
+If CSV is -, %(dest)s must be specified''')
 args = parser.parse_args()
 
 csvfile = args.CSV
@@ -115,10 +115,7 @@ with sys.stdin if csvfile == '-' else open(csvfile, 'r', newline='') as f:
             has_myrating = len(row) > 15
             continue
 
-        progbar("Reading CSV", i - 1, reader.line_num - 1)
         all_csv_data.append(CsvFields(row[1][2:], row[5], row[2], row[13], row[15] if has_myrating else '', row[4], row[9], row[8], row[12]))
-
-    progbar("Reading CSV", reader.line_num - 1, reader.line_num - 1)
 
 all_csv_data = all_csv_data[:min(fetch_amount, len(all_csv_data))]
 
@@ -131,7 +128,8 @@ if update_mode:
     if forcepat == None:
         force_ids = []
     else:
-        force_ids = [movie['imdbID'] for movie in in_json['movies'] if re.search(forcepat, movie['title'], flags=re.IGNORECASE)]
+        forcepat_compiled = re.compile(forcepat, flags=re.IGNORECASE)
+        force_ids = [movie['imdbID'] for movie in in_json['movies'] if forcepat_compiled.search(movie['title'])]
 
     # Creating list of IDs which we don't need to download because of update mode.
     no_redownload_ids = [movie['imdbID'] for movie in in_json['movies'] if movie['imdbID'] not in force_ids]

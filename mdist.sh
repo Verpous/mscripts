@@ -71,7 +71,7 @@ handle_option() {
     case "$1" in
         o) ## OMIT ## Choose whether to omit buckets with 0 movies. Options are 'always', 'auto', or 'never'.
            ##> Defaults to 'auto', which uses a mode that depends on DISTRIBUTION.
-            [[ "${2,,}" != @(always|auto|never) ]] && utils::die "Invalid OMIT: '$2'."
+            [[ "${2,,}" != @(always|auto|never) ]] && utils::die "Invalid OMIT: '$2'"
             omit_mode="${2,,}"
             ;;
         s) ## Sort based on the table values, not the keys.
@@ -150,7 +150,7 @@ case "${1,,}" in
     v?(ote?(s))-g?(ranular))                                    distribution=d_votes_granular               ;;
     r?(un)-t?(ime?(s)))                                         distribution=d_runtime                      ;;
     r?(un)-t?(ime?(s))-g?(ranular))                             distribution=d_runtime_granular             ;;
-    *)                                                          utils::die "Invalid DISTRIBUTION: '$1'."    ;;
+    *)                                                          utils::die "Invalid DISTRIBUTION: '$1'"     ;;
 esac
 
 shift
@@ -259,6 +259,7 @@ esac
 # If include/exclude are requested, we'll append them to the fmt so we can sed on those patterns.
 [[ -z "$include" && -z "$exclude" ]] || fmt+="#%Y-%m-%d"
 
+trap 'rm -- "$tmp"' EXIT
 tmp="$(mktemp)" # Fit to screen step requires a double pass on the file.
 sep=$'\x1F'     # Character that certainly won't be given as input PATTERNs for -v, -g so we can use it as the sed separator.
 na=-2147483648  # Empty values '-' will be mapped to this instead, because it sorts at the beginning both numerically and lexicographically.
@@ -423,4 +424,3 @@ $title && case "$distribution" in
 esac
 
 cat -- "$tmp"
-rm -- "$tmp"

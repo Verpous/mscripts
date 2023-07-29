@@ -371,19 +371,19 @@ parser = argparse.ArgumentParser(
     epilog='Crew types, sort keys, group sort keys, and exclude keys all support many aliases so you can use similar words that make sense to you,'
     " and omit spaces or replace them with '-' or '_' (e.g., 'myrating', 'stunt_performer').")
 parser.add_argument('-G', '--group', choices=['always', 'auto', 'never'], type=str.lower, default='auto', action='store', help=
-    'Choose whether to group people who\'ve collaborated together. Default is \'auto\', which uses a group mode that makes sense for CREW')
+    'Choose whether to group people who\'ve collaborated together. Default is %(default)s, which uses a group mode that makes sense for CREW')
 parser.add_argument('-m', '--min', metavar='NUM', type=int, default=1, action='store', help=
-    'Groups with fewer than NUM movies will not be printed. Defaults to unbounded')
+    'Groups with fewer than %(metavar)s movies will not be printed. Defaults to unbounded')
 parser.add_argument('-s', '--sort', metavar='KEYS', type=sort_aliases, default=[sk_released, sk_alpha], action='store', help=
-    f'''Sort movies according to KEYS, which is a comma-delimited list of keys to sort by, in decreasing priority. Defaults to 'released,alphabetical'.
+    f'''Sort movies according to %(metavar)s, which is a comma-delimited list of keys to sort by, in decreasing priority. Defaults to 'released,alphabetical'.
 Valid sort keys: {join_keys(valid_sort_keys)}''')
 parser.add_argument('-g', '--group-sort', metavar='KEYS', type=gsort_aliases, default=[gsk_nmovies, gsk_alpha], action='store', help=
-    f'''Sort groups according to KEYS, which is a comma-delimited list of keys to sort by, in decreasing priority. Defaults to 'nmovies,alphabetical'.
+    f'''Sort groups according to %(metavar)s, which is a comma-delimited list of keys to sort by, in decreasing priority. Defaults to 'nmovies,alphabetical'.
 Valid group sort keys: {join_keys(valid_gsort_keys)}''')
 parser.add_argument('-p', '--print', default=False, action='store_true', help=
     'Print a list of valid crew types and exit')
 parser.add_argument('-x', '--exclude', metavar='KEYS', type=exclude_aliases, default=[], action='store', help=
-    f'''Exclude movies which don't have a value for any one of KEYS, which is a comma-delimited list of keys. Defaults to no exclusions.
+    f'''Exclude movies which don't have a value for any one of %(metavar)s, which is a comma-delimited list of keys. Defaults to no exclusions.
 Valid exclude keys: {join_keys(valid_exclude_keys)}''')
 parser.add_argument('-r', '--reverse-movies', default=True, action='store_false', help=
     'Reverse the sort order of movies')
@@ -398,7 +398,7 @@ parser.add_argument('JSON', nargs='*', action='store', help=
 2. Absolute paths, paths relative to the current directory
 3. Paths relative to the directory pointed to by the MOVIES_DIR environment variable
 In all forms the .json extension can optionally be omitted.
-If no JSON provided, use standard input.''')
+If no %(dest)s provided, use standard input.''')
 args = parser.parse_args()
 
 # CREW is optional in this case but it's easier to keep it mandatory and ignore it.

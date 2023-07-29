@@ -25,6 +25,7 @@
 # TODO: Add -C option which reinterprets LISTs as categories and:
 # * if '-f' is not set, it acts as though you ran mup on the categories' dependencies.
 # * if '-f' is set, it only generates the requested categories.
+# TODO: Add option to use curl instead of browser
 
 scripts="$(dirname -- "$BASH_SOURCE")"
 source "$scripts"/options.sh
@@ -61,10 +62,10 @@ handle_option() {
         p) ## Skip the step where mprint is run to generate new category files. Only update the local JSONs.
             do_gen=false
             ;;
-        F) ## OPTS ## Semicolon-delimited options to pass to mfetch. DON'T pass -u/--update here. Don't forget to escape/quote the semicolons!
+        F) ## OPTS ## Semicolon-delimited options to pass to mfetch. DON'T pass '-u/--update' here. Don't forget to escape/quote the semicolons!
             readarray -td \; fopts < <(echo -n "$2")
             ;;
-        P) ## OPTS ## Semicolon-delimited options to pass to mprint. DON'T pass -p here, and -G is not recommended.
+        P) ## OPTS ## Semicolon-delimited options to pass to mprint. DON'T pass '-p' here, and '-G' is not recommended.
            ##> It's your responsibility to ensure this doesn't conflict with the category mprint options.
             readarray -td \; popts < <(echo -n "$2")
             ;;

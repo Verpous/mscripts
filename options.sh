@@ -143,6 +143,8 @@ options::init() {
     # Exits with help if there are fewer than MANDATORYNUM positional arguments provided. Pass a negative value to ignore.
     # Sets $options_shift to the number you should pass to 'shift' to discard the processed arguments.
     options::getopts() {
+        local arg
+        
         while getopts "$__options_optstring" arg "${__options_argv[@]}"; do
             case "$arg" in
                 h)

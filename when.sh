@@ -40,16 +40,16 @@ handle_option() {
         d) ## DATE ## Compute relative to DATE, not 'now'. Syntax is the same as 'date -d'.
             base_date="$(date -d "$2" +%s)" || exit 1
             ;;
-        f) ## FORMAT ## Output date according to FORMAT. See 'date --help' for FORMAT syntax. Defaults to '%Y-%m-%d'.
+        f) ## FORMAT ## Output date according to FORMAT. See 'date --help' for FORMAT syntax. Defaults to '##0'.
             output_fmt="$2"
             ;;
         v) ## Shorthand for '-f "%Y-%m-%d %T"' (for increased verbosity).
-            output_fmt="%Y-%m-%d %T"
+            $FUNCNAME f "%Y-%m-%d %T"
             ;;
     esac
 }
 
-options::init "TIME..."
+options::init "TIME..." "$output_fmt"
 options::getopts handle_option 1
 shift $options_shift
 
@@ -65,7 +65,7 @@ for arg in "$@"; do
         ?(+|-)+([0-9])[wW]) (( secs += "${arg::-1}" * 60 * 60 * 24 * 7 )) ;;
         ?(+|-)+([0-9])[mM]) (( secs += "${arg::-1}" * 60 * 60 * 24 * 30 )) ;;
         ?(+|-)+([0-9])[yY]) (( secs += "${arg::-1}" * 60 * 60 * 24 * 365 )) ;;
-        *) utils::die "Invalid TIME: '$arg'. TIME syntax is (+|-)?[0-9]+[sihdwmy]? (case-insensitive)." ;;
+        *) utils::die "Invalid TIME: '$arg'. TIME syntax is (+|-)?[0-9]+[sihdwmy]? (case-insensitive)" ;;
     esac
 done
 
