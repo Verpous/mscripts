@@ -15,12 +15,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+# TODO: Add people's gender if possible, I'm interested in how many movies I've seen from male/female directors.
+# TODO: Add movie's country if possible, and also language. So I can see which country I've seen the most movies from (besides USA of course)
+# TODO: Add index of the movie in the list, or alternatively add mbrowse column for index in the sort order, or even index in a different sort order?
+
 import json
 import csv
 import sys
 import os
 import argparse
 import re
+import datetime
 from collections import namedtuple
 
 try:
@@ -107,15 +112,25 @@ if upfile != None and not update_mode:
 # and the release date which is obtainable from Cinemagoer but easier through the csv (trust me).
 all_csv_data = list()
 
+# Some movies (Saint Clara at least) have the release date written with just the year, so we have to patch that.
+def fix_date_format(date):
+    for fmt in ['%Y-%m-%d', '%Y-%m', '%Y']:
+        try:
+            return datetime.datetime.strptime(date, fmt).strftime("%Y-%m-%d")
+        except ValueError:
+            pass
+
+    raise ValueError(f'Invalid date: {date}')
+
 with sys.stdin if csvfile == '-' else open(csvfile, 'r', newline='') as f:
     reader = csv.reader(f)
 
     for i, row in enumerate(reader):
         if i == 0:
-            has_myrating = len(row) > 15
+            has_myrating = len(row) > 16
             continue
 
-        all_csv_data.append(CsvFields(row[1][2:], row[5], row[2], row[13], row[15] if has_myrating else '', row[4], row[9], row[8], row[12]))
+        all_csv_data.append(CsvFields(row[1][2:], row[5], fix_date_format(row[2]), fix_date_format(row[14]), row[16] if has_myrating else '', row[4], row[10], row[9], row[13]))
 
 all_csv_data = all_csv_data[:min(fetch_amount, len(all_csv_data))]
 
@@ -195,7 +210,7 @@ def json_person(person):
             roles = [get(char, 'name', 'N/A') for char in person.currentRole]
 
     roles = [role for role in roles if role != 'N/A']
-    return { 'id': person.getID(), 'name': get(person, 'name', person.getID()), 'roles': roles }
+    return {'id': person.getID(), 'name': get(person, 'name', person.getID()), 'roles': roles}
 
 def json_people(movie, key):
     people = get(movie, key, [])
@@ -215,16 +230,16 @@ def json_people(movie, key):
     return [json_person(person) for person in filtered]
 
 json_movies = list()
-result = { 'movies': json_movies }
+result = {'movies': json_movies}
 
 for i, movie in enumerate(movies):
     progbar("Building JSON", i, len(movies))
     json_movie = dict()
-    json_movie.update({ key: get(movie, key, default) for key, default in direct_keys })
+    json_movie.update({key: get(movie, key, default) for key, default in direct_keys})
     # These keys will be added later, but I want them to appear before the crew keys in the file so we need to add them now too.
-    json_movie.update({ k: None for k in csv_to_json_keys })
-    json_movie.update({ 'myrating': None, 'watched': None, 'released': None, 'description': None, 'runtime': None })
-    json_movie.update({ key: json_people(movie, key) for key in people_keys })
+    json_movie.update({k: None for k in csv_to_json_keys})
+    json_movie.update({'myrating': None, 'watched': None, 'released': None, 'description': None, 'runtime': None})
+    json_movie.update({key: json_people(movie, key) for key in people_keys})
     json_movies.append(json_movie)
 
 progbar("Building JSON", len(movies), len(movies))
@@ -243,7 +258,7 @@ for i, fields in enumerate(all_csv_data):
 
     # The only time it can be None is if the download phase got cut short due to an error.
     if json_movie != None:
-        json_movie.update({ k: getattr(fields, k) for k in csv_to_json_keys})
+        json_movie.update({k: getattr(fields, k) for k in csv_to_json_keys})
 
 progbar("Adding CSV data", len(all_csv_data), len(all_csv_data))
 

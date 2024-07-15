@@ -110,7 +110,7 @@ utils::die() {
 # Reads a string with the prompt PROMPT and returns success if it begins with a Y (case-insensitive), otherwise failure.
 utils::confirm() {
     local confirm
-    read -p "$1 " confirm # Add a space at the end.
+    read -ep "$1 " confirm # Add a space at the end.
     [[ "$confirm" == *([[:space:]])[yY]* ]]
 }
 

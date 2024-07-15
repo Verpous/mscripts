@@ -141,30 +141,37 @@ fetch() {
     local out_json="$2.json"
 
     echo "Downloading '$out_csv'..."
-    local initial_csv="$(get_latest_csv)"
-    local timeout=20
-    SECONDS=0
 
-    # I can't for the life of me figure out how to be logged in with cURL so we use the browser where you're assumed to be already logged in.
-    python -m webbrowser "https://www.imdb.com/list/ls$lid/export?ref_=ttls_exp" > /dev/null
+    # Old code which no longer works because imdb are cunts.
+    if false; then
+        local initial_csv="$(get_latest_csv)"
+        local timeout=20
+        SECONDS=0
 
-    # We'll try to obtain the most recent csv in the downloads folder, until it's a different one than before we started downloading.
-    while local in_csv="$(get_latest_csv)"; [[ "$initial_csv" == "$in_csv" ]]; do
-        if (( SECONDS > timeout )); then
-            echo "Timed out when trying to download '$out_csv'. Skipping it" >&2
-            return 1
-        fi
-    done
+        # I can't for the life of me figure out how to be logged in with cURL so we use the browser where you're assumed to be already logged in.
+        python -m webbrowser "https://www.imdb.com/list/ls$lid/export?ref_=ttls_exp" > /dev/null
 
-    # When the file is created it's sometimes empty for a bit. At some point it jumps to being fully written, without any inbetween.
-    # So this waits for the file size to not be zero.
-    # NOTE: [[ -e "..." ]] would be a lot nicer but for some reason it sometimes creates a copy of the file and messes everything up.
-    while (( "$(stat --format="%s" "$downloads/$in_csv")" == 0 )); do
-        if (( SECONDS > timeout )); then
-            echo "Timed out when trying to download '$out_csv'. Skipping it" >&2
-            return 1
-        fi
-    done
+        # We'll try to obtain the most recent csv in the downloads folder, until it's a different one than before we started downloading.
+        while local in_csv="$(get_latest_csv)"; [[ "$initial_csv" == "$in_csv" ]]; do
+            if (( SECONDS > timeout )); then
+                echo "Timed out when trying to download '$out_csv'. Skipping it" >&2
+                return 1
+            fi
+        done
+
+        # When the file is created it's sometimes empty for a bit. At some point it jumps to being fully written, without any inbetween.
+        # So this waits for the file size to not be zero.
+        # NOTE: [[ -e "..." ]] would be a lot nicer but for some reason it sometimes creates a copy of the file and messes everything up.
+        while (( "$(stat --format="%s" "$downloads/$in_csv")" == 0 )); do
+            if (( SECONDS > timeout )); then
+                echo "Timed out when trying to download '$out_csv'. Skipping it" >&2
+                return 1
+            fi
+        done
+    else # Even hackier new solution. All the ugly is contained in a python script which downloads the list with selenium.
+        local in_csv
+        in_csv="$(mcsv.py "$lid" "$downloads")" || return 1
+    fi
 
     mv "$downloads/$in_csv" "$mdir/$out_csv"
 
@@ -172,7 +179,7 @@ fetch() {
     # and if nothing has changed then we won't run mprint for this later.
     if $do_optimize && [[ -f "$mdir/$out_json" ]]; then
         local temp_json="$(mktemp -p "$mdir")"
-        "$scripts"/mfetch.py --update "$mdir/$out_json" "${fopts[@]}" -- "$mdir/$out_csv" "$temp_json"
+        "$scripts"/mfetch.py --update "$mdir/$out_json" "${fopts[@]}" -- "$mdir/$out_csv" "$temp_json" || { rm -- "$temp_json"; return 1; }
 
         # diff exits with 0 when the files are identical.
         diff -q -- "$mdir/$out_json" "$temp_json" > /dev/null && local ret=1 || local ret=0

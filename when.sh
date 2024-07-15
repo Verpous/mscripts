@@ -22,11 +22,11 @@
 ## 3. Optional unit suffix: (s)econds/m(i)nutes/(h)ours/(d)ays/(w)eeks/(m)onths/(y)ears. Defaults to days.
 
 ### Examples:
-###     ##PROG 3                  (what's the date 3 days from now)
-###     ##PROG 2m                 (what's the date 2 months from now)
-###     ##PROG -- -30i            (what's the date 30 minutes ago)
-###     ##PROG -v +1y -3w 2s -5h  (what's the date 1 year, minus 3 weeks, plus 2 seconds, minus 5 hours from now, in verbose format)
-###     ##PROG -d 1999-07-25 160d (what's the date 160 days from July 25, 1999)
+###     $PROG 3                  (what's the date 3 days from now)
+###     $PROG 2m                 (what's the date 2 months from now)
+###     $PROG -- -30i            (what's the date 30 minutes ago)
+###     $PROG -v +1y -3w 2s -5h  (what's the date 1 year, minus 3 weeks, plus 2 seconds, minus 5 hours from now, in verbose format)
+###     $PROG -d 1999-07-25 160d (what's the date 160 days from July 25, 1999)
 
 scripts="$(dirname -- "$BASH_SOURCE")"
 source "$scripts"/options.sh
@@ -40,7 +40,7 @@ handle_option() {
         d) ## DATE ## Compute relative to DATE, not 'now'. Syntax is the same as 'date -d'.
             base_date="$(date -d "$2" +%s)" || exit 1
             ;;
-        f) ## FORMAT ## Output date according to FORMAT. See 'date --help' for FORMAT syntax. Defaults to '##0'.
+        f) ## FORMAT ## Output date according to FORMAT. See 'date --help' for FORMAT syntax. Defaults to '$DEF_FMT'.
             output_fmt="$2"
             ;;
         v) ## Shorthand for '-f "%Y-%m-%d %T"' (for increased verbosity).
@@ -49,8 +49,8 @@ handle_option() {
     esac
 }
 
-options::init "TIME..." "$output_fmt"
-options::getopts handle_option 1
+options::init "TIME..."
+DEF_FMT="$output_fmt" options::getopts handle_option 1
 shift $options_shift
 
 secs=0

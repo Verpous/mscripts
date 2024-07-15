@@ -145,7 +145,7 @@ else
     strip=""
 fi
 
-trap 'rm -- "$tmpfile"' EXIT
+trap 'rm -f -- "$tmpfile"' EXIT
 lastcount=0
 tmpfile="$(mktemp)"
 
@@ -169,7 +169,7 @@ for loc in "${where[@]}"; do
         infile=/dev/stdin
     else
         IFS='' read -rd '' infile < <(find -L -- "$loc" "$loc.txt" "$catdir/$loc" "$catdir/$loc.txt" -maxdepth 0 -type f,p -readable -print0 2> /dev/null)
-        [[ -z "$infile" ]] && { echo "'$loc' is not a valid WHERE. Skipping it" >&2; continue; }
+        [[ ! "$infile" ]] && { echo "'$loc' is not a valid WHERE. Skipping it" >&2; continue; }
     fi
 
     # With -H, creating an op that prints the filename (with optional color).

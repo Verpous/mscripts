@@ -101,11 +101,11 @@ To export an IMDb list to CSV you need to open the list on IMDb's website and pr
 
 Then press the "Export" button to download the list as a CSV. Say the file is named "movies.csv". Then the next thing you would do is run:
 
-`python mfetch.py -u movies.csv`
+`mfetch.py -u movies.csv`
 
 This will create a JSON named "movies.json" in the current directory. Note the `-u` flag. This script can run for hours if your list is very big. What `-u` does is it makes mfetch only download movies which are not already in "movies.json". So you only need do the big run once, and subsequent runs will finish in seconds. Note that you can add `-u` even if "movies.json" doesn't exist yet, and it will be ignored.
 
-To make sure everything works, I recommend running `python mfetch.py -m 10 <your-list>.csv`. This will make mfetch download no more than 10 movies, so you can see if it works before doing the big run. Once you're confident, you can run mfetch again with `-u` to not even redownload those 10 movies.
+To make sure everything works, I recommend running `mfetch.py -m 10 <your-list>.csv`. This will make mfetch download no more than 10 movies, so you can see if it works before doing the big run. Once you're confident, you can run mfetch again with `-u` to not even redownload those 10 movies.
 
 Like all other scripts here, you can use `-h` to get the full list of options.
 
@@ -113,15 +113,15 @@ Like all other scripts here, you can use `-h` to get the full list of options.
 
 mprint is a Python script which takes a JSON or multiple JSONs output by mfetch for your lists, and outputs text with insights about the movies in these lists for you to read. The example from earlier about actors in movies I own on DVD was generated with the command:
 
-`python mprint.py cast dvds.json`
+`mprint.py cast dvds.json`
 
 mprint takes as input a **crew type**, in this case cast, and a list of JSON files. The output is a list of crewmembers of the requested type and what movies they've been in from any one of the input JSONs. For example, I've got my list of shows I've watched in "shows.json", and movies in "movies.json". The command:
 
-`python mprint.py director shows.json movies.json`
+`mprint.py director shows.json movies.json`
 
 Will show me all the directors behind all the movies and shows I've watched. By default they will be sorted by how many of those movies/shows they directed. If I want to, say, sort them by their average metascore, I can run:
 
-`python mprint.py -g metascore director shows.json movies.json`
+`mprint.py -g metascore director shows.json movies.json`
 
 mprint outputs to standard output. You'll usually want to redirect it into a .txt file.
 
@@ -155,7 +155,7 @@ Besides the ability to sort groups, you can also sort each group's movies with `
 
 So for one final example, say you want to know who is the writer that you've rated the highest on average and which of the movies you've rated did he write sorted by the order you watched them, but only out of writers with at least 3 rated movies. Then you can run:
 
-`python mprint.py -x myrating -g myrating -s watched -m 3 writer movies.json`
+`mprint.py -x myrating -g myrating -s watched -m 3 writer movies.json`
 
 Note: sorting by the date you watched the movies actually sorts by the date they were added to your IMDb list. So it's more akin to the "list order" option on IMDb.
 
@@ -163,7 +163,7 @@ Note: sorting by the date you watched the movies actually sorts by the date they
 
 So far we've seen that you're supposed to open IMDb in the browser, export your list to CSV, run mfetch on that CSV, and then run mprint on the resulting JSON maybe even a dozen times to update all the text files you're interested in. If only there was a way to automate all that...
 
-Introducing mup. mup is that 3-letter command I mentioned earlier. It's a Bash script which automates all but the most advanced usage of mfetch and mprint. With this tool you will never need to export your lists to CSV manually or directly run mfetch and mprint. All you need to do is configure mup with the lists you're interested in, then run `bash mup.sh` and it will take care of everything.
+Introducing mup. mup is that 3-letter command I mentioned earlier. It's a Bash script which automates all but the most advanced usage of mfetch and mprint. With this tool you will never need to export your lists to CSV manually or directly run mfetch and mprint. All you need to do is configure mup with the lists you're interested in, then run `mup.sh` and it will take care of everything.
 
 mup works by downloading **lists**, and generating **categories**. A list is just an IMDb list. mup needs to know which lists you're interested in so it can export them to CSV and then produce a JSON with all their data. But then mup needs to know what mprint output you're interested in producing from these lists. This is what categories are for. A category is a folder with a text file for every crew type generated by mprint with arguments of your choice.
 
@@ -171,7 +171,7 @@ All the output from mup is placed in a directory of your choice which we will ca
 
 For example, I have a list of all the movies I've watched on IMDb, and one for shows. If I run the command:
 
-`bash mup.sh movies shows`
+`mup.sh movies shows`
 
 mup will: 
 
@@ -226,11 +226,11 @@ Every line in the mconfig defines either a list or a category. Lines which defin
 
 `L <list-name> <list-id> <default?>`
 
-`<list-name>` is a name you want to give your list. When I run `bash mup.sh movies`, mup looks for a list with the name movies in my mconfig, and the files it creates for this list get named "movies.csv", "movies.json". This field only supports alphanumeric characters and underscores, and is case-insensitive.
+`<list-name>` is a name you want to give your list. When I run `mup.sh movies`, mup looks for a list with the name movies in my mconfig, and the files it creates for this list get named "movies.csv", "movies.json". This field only supports alphanumeric characters and underscores, and is case-insensitive.
 
 `<list-id>` is the ID given to your list by IMDb (the IDs in this example are made up). You can find out your list's ID by opening it up in the browser. The URL of the list page should look like this: `imdb.com/list/ls123456789`. Whatever number it says there instead of "123456789" is your list's ID. mup needs to know this ID in order to export your list to CSV.
 
-You can actually run `bash mup.sh 123456789` directly to download this list and create a category for it even if it's not in your mconfig.
+You can actually run `mup.sh 123456789` directly to download this list and create a category for it even if it's not in your mconfig.
 
 `<default?>` indicates if this list should be downloaded when you run mup without arguments. If it starts with a Y (case-insensitive), that means yes. Any other string means no. With the example above, if I run mup without arguments, only the movies and shows lists get downloaded.
 
@@ -277,15 +277,15 @@ Harrison Ford:
 
 mgrep lets you find all people in a category whose entry matches a pattern. The pattern can match any part of the person's entry. Pattern syntax is the same as egrep, or grep -E. You could find this complete entry for Harrison Ford by typing:
 
-`bash mgrep.sh "harrison f"`
+`mgrep.sh "harrison f"`
 
 or:
 
-`bash mgrep.sh -- "- indiana jones"`
+`mgrep.sh -- "- indiana jones"`
 
 Or any other pattern which matches any part of his entry. Notice that the pattern is case insensitive. You can even match multiline patterns, as long as all the lines belong to the same person's entry. So if you don't remember Karl Urban's name, but you remember he was in *Dredd* and *The Lord of the Rings*, you can find him using:
 
-`bash mgrep.sh "dredd.*lord of the rings|lord of the rings.*dredd"`
+`mgrep.sh "dredd.*lord of the rings|lord of the rings.*dredd"`
 
 The use of `|` in the pattern ensures that it will work no matter which movie came first.
 
@@ -293,7 +293,7 @@ You can actually include the newline character in the pattern. But the pattern d
 
 mgrep searches in a category of your choice, and prints all the people from any crew type who match the pattern in this category. Say I want to find all the people from movies I own at home who were in *The Lord of the Rings: The Fellowship of the Ring* and have an average rating of at least 8.6 and less than 8.8. Then I'll do:
 
-`bash mgrep.sh -l home 'average rating: 8\.[6-7].*the fellowship of the ring'`
+`mgrep.sh -l home 'average rating: 8\.[6-7].*the fellowship of the ring'`
 
 And I'll get this output:
 
@@ -351,15 +351,15 @@ stunt performer.txt:    The Lord of the Rings: The Fellowship of the Ring
 
 You can also limit searches to certain files. Say you want to find George Lucas's credits, but only as a writer or director. Then you should do:
 
-`bash mgrep.sh -l home "george lucas" writer director`
+`mgrep.sh -l home "george lucas" writer director`
 
 What's happening here is that mgrep will only look for George Lucas in the files "writer.txt", "director.txt" in the category "home". The ".txt" can be optionally omitted so you can simply write crew types. You can also give mgrep a full path to a file even outside of any category, like:
 
-`bash mgrep.sh "george lucas" ~/Desktop/cast.txt`
+`mgrep.sh "george lucas" ~/Desktop/cast.txt`
 
 Or you could pass in `-` to read from standard input. This lets you pipe mprint into mgrep. You can mix and match, like:
 
-`python mprint.py director -s alphabetical | bash mgrep.sh "george lucas" writer - ~/Desktop/cast.txt`
+`mprint.py director -s alphabetical | mgrep.sh "george lucas" writer - ~/Desktop/cast.txt`
 
 By default mgrep searches all crew types in the given category. If you don't specify a category (with `-l`), mgrep searches in **the first category defined in the mconfig file**. The same file mup uses. For me, the default category is all movies and shows I've seen combined.
 
@@ -369,7 +369,7 @@ There's lots of options to control the output of mgrep, many of which are borrow
 
 mbrowse is a tool that I wrote to help me pick what to watch. It's a python script which takes JSONs output by mfetch and prints the movies in them to the terminal, with nice colors and formatting and many options for how to sort movies and what information to show about them. For instance, I have an IMDb list of my [MUBI](https://mubi.com) watchlist. If I run:
 
-`python mbrowse.py mubi`
+`mbrowse.py mubi`
 
 I'll get this output:
 
@@ -406,7 +406,7 @@ Drive My Car                  -          2:59     2021     7.6     91         Ry
 
 In the terminal I utilize colors to greatly improve readability, but I can't show that here.
 
-The command above is the same as `python mbrowse.py mubi.json`, and the same as `python mbrowse.py "$MOVIES_DIR"/mubi.json`. mbrowse lets you omit the ".json" extension, and it automatically looks in the directory described by the MOVIES_DIR environment variable if it is defined, so you can run it from anywhere.
+The command above is the same as `mbrowse.py mubi.json`, and the same as `mbrowse.py "$MOVIES_DIR"/mubi.json`. mbrowse lets you omit the ".json" extension, and it automatically looks in the directory described by the MOVIES_DIR environment variable if it is defined, so you can run it from anywhere.
 
 IMDb is already capable of letting you sort lists and browse them, but there are some things mbrowse lets you do that IMDb can't:
 
@@ -421,13 +421,13 @@ You may have noticed the column there titled "Days Left". The main reason I wrot
 
 First, you need to be using a streaming service that gives you this kind of information at all. I'll use MUBI in this example. Fortunately, there's the website [What's On MUBI](https://whatsonmubi.com/), where I can look up a movie and learn which countries it's available in, and crucially, when the movie is leaving. You need to take the date that the movie is leaving, and add it to the movie's description on your IMDb list **exactly in the format** YYYY-MM-DD. For example: "2023-07-25".
 
-What's On MUBI tells you in how many days the movie is leaving relative to today, not an absolute date. It's kind of a pain to manually do that math, so I included an additional little script to help you. Simply run: `bash when.sh 15` and it will output what the date will be 15 days from now in the correct format.
+What's On MUBI tells you in how many days the movie is leaving relative to today, not an absolute date. It's kind of a pain to manually do that math, so I included an additional little script to help you. Simply run: `when.sh 15` and it will output what the date will be 15 days from now in the correct format.
 
 Both mbrowse and when are capable of more than what I describe here. You can read the full description of what they can do with `-h`.
 
 ## mdist
 
-mdist is a bash script that takes JSON arguments in the same way that mbrowse does, and outputs a diagram of how movies from the list distribute over a parameter of your choice. You can check out the distribution of what days you watch movies on, rating distributions, and many more. For instance, if I run: `bash mdist.sh release-month-of-year movies`, I will get the distribution of when movies I've seen were released in the year:
+mdist is a bash script that takes JSON arguments in the same way that mbrowse does, and outputs a diagram of how movies from the list distribute over a parameter of your choice. You can check out the distribution of what days you watch movies on, rating distributions, and many more. For instance, if I run: `mdist.sh release-month-of-year movies`, I will get the distribution of when movies I've seen were released in the year:
 
 ```
 Number of Movies Released Per Month of a Year
@@ -467,26 +467,3 @@ Just clone this repository and you can run the scripts. I recommend adding their
 
 * I'm on Windows, but I use Bash the GNU Coreutils ported over by MinGW. I think everything here should work on Linux, but I haven't tested it
 * I constantly get ideas for new features and I can't help myself so there'll probably be updates
-* All the example commands above start with `python` or `bash` e.g. `python mfetch.py`, or `bash mup.sh`. In reality, I never run them like that. All the scripts have [shebangs](https://en.wikipedia.org/wiki/Shebang_(Unix)) so depending on your environment you may be able to simply run `mprint.py`, `mup.sh`
-* Even just typing `mup.sh` can be a pain. It would be a lot nicer if you could simply type `mup` and that's it. I have this `command_not_found_handle` in my bashrc which lets me omit the file extensions in command names:
-
-```bash
-command_not_found_handle() {
-    unset -f command_not_found_handle
-    found=false
-
-    # Iterate over possible autocompletions.
-    while IFS='' read -r cmmnd; do
-        # If the only thing that was autocompleted was the extension, execute it,
-        # but outside the loop because STDIN is redirected inside here.
-        if [[ "$cmmnd" == "$1".* ]]; then
-            found=true
-            break
-        fi
-    done < <(compgen -c -- "$1") # Generate possible autocompletions for the command.
-
-    $found && exec "$cmmnd" "${@:2}"
-    echo "bash: '$1': command not found" >&2
-    return 127
-}
-```

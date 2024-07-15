@@ -31,15 +31,14 @@
 ###   [release|watch]-day-of-month
 ###   [release|watch]-day-of-week
 ###   [release|watch]-day-of-week-monday
-###   [rating|metascore|crew-size|run-time|votes]-granular
-###   rating
-###   metascore
+###   rating[-granular]
+###   metascore[-granular]
 ###   my-rating
 ###   leaving
-###   crew-size
+###   crew-size[-granular]
 ###   title-length
-###   run-time
-###   votes
+###   run-time[-granular]
+###   votes[-granular]
 ### 
 ### Convenient shorthands are supported: 't-l' for 'title-length', 'm-g' for 'metascore-granular', 'w-d-o-w-m' for 'watch-day-of-week-monday', etc.
 ### The 'monday' distributions treat Monday as the first day of the week. By default Sunday is the first day.
@@ -184,6 +183,7 @@ case "$distribution" in
         [[ "$crews" == '*' ]] && crews="$("$scripts"/mprint.py -p cast | head -c -1 | tr '\n' ,)"
         column="$crews"
         ;;
+    *) utils::die "Error: no column for DISTRIBUTION: $distribution" ;;
 esac
 
 # Here goes sort type configuration.
@@ -193,6 +193,9 @@ case "$distribution" in
     # Rating distributions do not use this padding so they need to be treated as numbers.
     d_@(rating|myrating|metascore|leaving|crew|title|runtime|votes)*)   sorttype=-n  ;;
 esac
+
+# If the table should be sorted by values instead of keys then it's always -n, otherwise it's the same as the key type.
+[[ "$sortkey" == "1,1" ]] && result_sorttype=-n || result_sorttype="$sorttype"
 
 # Here goes date format configuration.
 case "$distribution" in
@@ -257,9 +260,9 @@ case "$distribution" in
 esac
 
 # If include/exclude are requested, we'll append them to the fmt so we can sed on those patterns.
-[[ -z "$include" && -z "$exclude" ]] || fmt+="#%Y-%m-%d"
+[[ ! "$include" && ! "$exclude" ]] || fmt+="#%Y-%m-%d"
 
-trap 'rm -- "$tmp"' EXIT
+trap 'rm -f -- "$tmp"' EXIT
 tmp="$(mktemp)" # Fit to screen step requires a double pass on the file.
 sep=$'\x1F'     # Character that certainly won't be given as input PATTERNs for -v, -g so we can use it as the sed separator.
 na=-2147483648  # Empty values '-' will be mapped to this instead, because it sorts at the beginning both numerically and lexicographically.
@@ -272,11 +275,11 @@ div_pow_of_10() {
 # For crew-size, the DSV delimiter matters and -v matters too. -v is also important for votes.
 "$scripts"/mbrowse.py --dsv \| -tv -C "$column" -f "$fmt" "${bopts[@]}" -- "$@" |
     # Taking care of -g, -v if provided.
-    if [[ -z "$include" && -z "$exclude" ]]; then
+    if [[ ! "$include" && ! "$exclude" ]]; then
         cat
     else
-        [[ -z "$include" ]] && include=. # This will always match
-        [[ -z "$exclude" ]] && exclude='This will never match'
+        [[ ! "$include" ]] && include=. # This will always match
+        [[ ! "$exclude" ]] && exclude='This will never match'
 
         case "$distribution" in
             d_@(release|watch)*)
@@ -297,7 +300,7 @@ div_pow_of_10() {
     fi | 
     case "$distribution" in
         d_rating)               cut -d . -f 1 ;;
-        d_rating_granular)      tr -d . ;; 
+        d_rating_granular)      tr -d . ;;
         d_metascore)            div_pow_of_10 1 ;; # This means 100 will be in its own category.
         d_crew)                 gawk '{ printf "%d\n", gsub(/(^[^|-])|\|[^|-]|,/, "") }' | div_pow_of_10 1 ;; # This only works if there are no commas in people's names. I checked, there aren't.
         d_crew_granular)        gawk '{ printf "%d\n", gsub(/(^[^|-])|\|[^|-]|,/, "") }' ;;
@@ -329,7 +332,7 @@ div_pow_of_10() {
                     for (last++; last <= max; last++) myprint(0, last)
                 }
             }'
-    fi | sort -s $sorttype -k "$sortkey" |
+    fi | sort -s $result_sorttype -k "$sortkey" |
     # We have everything we need to make a table now.
     gawk -v spacepad="$spacepad" -v na="$na" -v namefunc="$namefunc" -v name_map="$name_map" -v votepow="$votepow" \
         -v append_nmovies="$append_nmovies" -v append_key="$append_key" -v prepend_key="$prepend_key" '
@@ -392,35 +395,36 @@ if (( maxline > 0 )); then
 fi
 
 $title && case "$distribution" in
-    d_release_year)                 echo "Number of Movies Released Per Year"  ;;
-    d_release_month)                echo "Number of Movies Released Per Month"  ;;
-    d_release_day)                  echo "Number Of Movies Released Per Day"  ;;
-    d_release_month_of_year)        echo "Number of Movies Released Per Month of a Year"  ;;
-    d_release_week_of_year)         echo "Number of Movies Released Per Week of a Year (Weeks Start at Sunday)"  ;;
-    d_release_week_of_year_monday)  echo "Number of Movies Released Per Week of a Year (Weeks Start at Monday)"  ;;
-    d_release_day_of_year)          echo "Number of Movies Released Per Day of a Year"  ;;
-    d_release_day_of_month)         echo "Number of Movies Released Per Day of a Month"  ;;
-    d_release_day_of_week)          echo "Number of Movies Released Per Day of a Week (Weeks Start at Sunday)"  ;;
-    d_release_day_of_week_monday)   echo "Number of Movies Released Per Day of a Week (Weeks Start at Monday)"  ;;
-    d_watch_year)                   echo "Number of Movies Watched Per Year"  ;;
-    d_watch_month)                  echo "Number of Movies Watched Per Month"  ;;
-    d_watch_day)                    echo "Number Of Movies Watched Per Day"  ;;
-    d_watch_month_of_year)          echo "Number of Movies Watched Per Month of a Year"  ;;
-    d_watch_week_of_year)           echo "Number of Movies Watched Per Week of a Year (Weeks Start at Sunday)"  ;;
-    d_watch_week_of_year_monday)    echo "Number of Movies Watched Per Week of a Year (Weeks Start at Monday)"  ;;
-    d_watch_day_of_year)            echo "Number of Movies Watched Per Day of a Year"  ;;
-    d_watch_day_of_month)           echo "Number of Movies Watched Per Day of a Month"  ;;
-    d_watch_day_of_week)            echo "Number of Movies Watched Per Day of a Week (Weeks Start at Sunday)"  ;;
-    d_watch_day_of_week_monday)     echo "Number of Movies Watched Per Day of a Week (Weeks Start at Monday)"  ;;
-    d_leaving)                      echo "Number of Movies Per Number of Days Until They Leave"  ;;
-    d_rating?(_granular))           echo "Number of Movies Per IMDb Rating"  ;;
-    d_myrating)                     echo "Number of Movies Per My IMDb Rating"  ;;
-    d_metascore)                    echo "Number of Movies Per Metascore"  ;;
-    d_metascore_granular)           echo "Number of Movies Per Metascore"  ;;
-    d_crew?(_granular))             echo "Number of Movies Per Crew Size For Crew Types: $crews"  ;;
-    d_title)                        echo "Number of Movies Per Title Length"  ;;
-    d_votes?(_granular))            echo "Number of Movies Per Number of Votes on IMDb"  ;;
-    d_runtime?(_granular))          echo "Number of Movies Per Runtime (Minutes)"  ;;
+    d_release_year)                 echo "Number of Movies Released Per Year" ;;
+    d_release_month)                echo "Number of Movies Released Per Month" ;;
+    d_release_day)                  echo "Number Of Movies Released Per Day" ;;
+    d_release_month_of_year)        echo "Number of Movies Released Per Month of a Year" ;;
+    d_release_week_of_year)         echo "Number of Movies Released Per Week of a Year (Weeks Start at Sunday)" ;;
+    d_release_week_of_year_monday)  echo "Number of Movies Released Per Week of a Year (Weeks Start at Monday)" ;;
+    d_release_day_of_year)          echo "Number of Movies Released Per Day of a Year" ;;
+    d_release_day_of_month)         echo "Number of Movies Released Per Day of a Month" ;;
+    d_release_day_of_week)          echo "Number of Movies Released Per Day of a Week (Weeks Start at Sunday)" ;;
+    d_release_day_of_week_monday)   echo "Number of Movies Released Per Day of a Week (Weeks Start at Monday)" ;;
+    d_watch_year)                   echo "Number of Movies Watched Per Year" ;;
+    d_watch_month)                  echo "Number of Movies Watched Per Month" ;;
+    d_watch_day)                    echo "Number Of Movies Watched Per Day" ;;
+    d_watch_month_of_year)          echo "Number of Movies Watched Per Month of a Year" ;;
+    d_watch_week_of_year)           echo "Number of Movies Watched Per Week of a Year (Weeks Start at Sunday)" ;;
+    d_watch_week_of_year_monday)    echo "Number of Movies Watched Per Week of a Year (Weeks Start at Monday)" ;;
+    d_watch_day_of_year)            echo "Number of Movies Watched Per Day of a Year" ;;
+    d_watch_day_of_month)           echo "Number of Movies Watched Per Day of a Month" ;;
+    d_watch_day_of_week)            echo "Number of Movies Watched Per Day of a Week (Weeks Start at Sunday)" ;;
+    d_watch_day_of_week_monday)     echo "Number of Movies Watched Per Day of a Week (Weeks Start at Monday)" ;;
+    d_leaving)                      echo "Number of Movies Per Number of Days Until They Leave" ;;
+    d_rating?(_granular))           echo "Number of Movies Per IMDb Rating" ;;
+    d_myrating)                     echo "Number of Movies Per My IMDb Rating" ;;
+    d_metascore)                    echo "Number of Movies Per Metascore" ;;
+    d_metascore_granular)           echo "Number of Movies Per Metascore" ;;
+    d_crew?(_granular))             echo "Number of Movies Per Crew Size For Crew Types: $crews" ;;
+    d_title)                        echo "Number of Movies Per Title Length" ;;
+    d_votes?(_granular))            echo "Number of Movies Per Number of Votes on IMDb" ;;
+    d_runtime?(_granular))          echo "Number of Movies Per Runtime (Minutes)" ;;
+    *)                              utils::die "Error: no title for DISTRIBUTION: $distribution" ;;
 esac
 
 cat -- "$tmp"

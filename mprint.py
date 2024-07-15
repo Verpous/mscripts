@@ -87,11 +87,22 @@ def json_to_movie(json_movie, crew_type):
 def find_index(items, pred):
     return next((i for i, item in enumerate(items) if pred(item)), len(items))
 
+# Credit for this function: https://stackoverflow.com/a/31062966/12553917.
+def mean(data):
+    n = 0
+    mean = 0.0
+ 
+    for x in data:
+        n += 1
+        mean += (x - mean) / n
+
+    return mean
+
 def alias(valid_items, aliases, item):
-    aliases.update({ key: key for key in valid_items })
-    with_dash = { key.replace(' ', '-'): value for key, value in aliases.items() if ' ' in key }
-    with_underscore = { key.replace(' ', '_'): value for key, value in aliases.items() if ' ' in key }
-    no_spaces = { key.replace(' ', ''): value for key, value in aliases.items() if ' ' in key }
+    aliases.update({key: key for key in valid_items})
+    with_dash = {key.replace(' ', '-'): value for key, value in aliases.items() if ' ' in key}
+    with_underscore = {key.replace(' ', '_'): value for key, value in aliases.items() if ' ' in key}
+    no_spaces = {key.replace(' ', ''): value for key, value in aliases.items() if ' ' in key}
     aliases.update(with_dash)
     aliases.update(with_underscore)
     aliases.update(no_spaces)
@@ -246,13 +257,13 @@ def gsort_func(gsort_key):
     if gsort_key == gsk_nmovies:
         return lambda tup: len(tup[1])
     if gsort_key == gsk_rating:
-        return lambda tup: sum(appearance.movie.rating for appearance in tup[1]) / len(tup[1])
+        return lambda tup: mean(appearance.movie.rating for appearance in tup[1])
     if gsort_key == gsk_votes:
-        return lambda tup: sum(appearance.movie.votes for appearance in tup[1]) / len(tup[1])
+        return lambda tup: mean(appearance.movie.votes for appearance in tup[1])
     if gsort_key == gsk_metascore:
-        return lambda tup: sum(appearance.movie.metascore for appearance in tup[1] if appearance.movie.metascore != -1) / len(tup[1])
+        return lambda tup: mean(appearance.movie.metascore for appearance in tup[1] if appearance.movie.metascore != -1)
     if gsort_key == gsk_myrating:
-        return lambda tup: sum(appearance.movie.myrating for appearance in tup[1] if appearance.movie.myrating != -1) / len(tup[1])
+        return lambda tup: mean(appearance.movie.myrating for appearance in tup[1] if appearance.movie.myrating != -1)
     if gsort_key == gsk_npeople:
         return lambda tup: len(tup[0])
     if gsort_key == gsk_alpha:
@@ -458,7 +469,7 @@ if group_mode:
 
     # people_sets will in the end include all relevant people sets. We know that at minimum, it should have every set that any movie has.
     # This set also allows us to only iterate over every unique movie crew pair, instead of every movie pair.
-    people_sets = { movie.people for movie in movies if len(movie.people) > 0 }
+    people_sets = {movie.people for movie in movies if len(movie.people) > 0}
 
     # Optimization: we only need to only iterate over each *unordered* crew pair once. For that we need people_sets to be ordered.
     unique_people = list(people_sets)
@@ -483,7 +494,7 @@ if group_mode:
                 people_sets.add(intersection)
 
     # This is step 2 of the algorithm: finding each people set's credits.
-    creds = [ (people, [Appearance(movie, []) for movie in movies if people.issubset(movie.people)]) for people in people_sets]
+    creds = [(people, [Appearance(movie, []) for movie in movies if people.issubset(movie.people)]) for people in people_sets]
 else: # Not group mode.
     creds = dict()
 

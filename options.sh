@@ -35,25 +35,22 @@
 #   Note that the line MUST begin with spaces to distinguish it from prologue new-line comments.
 # * Option "Continuation" comments: Lines of the form '<spaces>##> [TEXT]'. Again, must be preceded by spaces, and continues the comment from the last line.
 #
-# Another supported feature is Comment Variables. Inside special comments you can type variable names using a special syntax which expands them to their value.
-# The syntax for variables is '##VARIABLE', written inside a comment (note the no spaces between the ## an the variable's name).
-# Supported variables are:
-# ##PROG - the name of the script, with the file extension.
-# ##NAME - the name of the script, without the file extension.
-# ##NUM where NUM is a number between 0 and 9 (e.g., ##0): custom variables which you can assign values to by them to options::init.
-# Variables can't include the characters '/', '\', or '&'.
+# Environment variables are supported inside special comments. Expressions such as '$VAR' or '${VAR}' are expanded according to the variables in the environment.
+# A few variables are declared for your convenience:
+# $DOLLAR   - expands to a literal '$', use to avoid unintended expansions.
+# $SRC      - the full path to the script.
+# $PROG     - the name of the script, with the file extension.
+# $NAME     - the name of the script, without the file extension.
 
 # We must capture these right away.
 __options_src="${BASH_SOURCE[1]}"
 __options_argv=("$@")
 
-# options::init POSITIONAL [VALUE]...
+# options::init POSITIONAL
 # Initializes options, which means you gain access to the other functions here.
 # POSITIONAL is the usage string for positional arguments.
-# VALUEs are assigned to variables ##0...##9, respectively.
 options::init() {
     __options_positional="$1"
-    __options_variables=("${@:2}")
 
     # Generating the options string for getopts from the case statements in the source file.
     # Options which specify a metavar are turned into options with an argument, the rest are without.
@@ -74,7 +71,7 @@ options::init() {
         # Most of the work is done in this subroutine, because we want to take all its output and pipe it through some extra stuff.
         options::help_internal() {
             # Printing the Usage line.
-            echo "Usage: ##PROG [$(command tr -d ":" <<< "$__options_optstring")]... $__options_positional"
+            echo "Usage: \$PROG [$(command tr -d ":" <<< "$__options_optstring")]... $__options_positional"
             
             # Prologue. That weird first expression in the second sed adds an extra newline if the description isn't empty.
             command sed -En '/^##>?\s/p' -- "$__options_src" | sed -Ez 's/^./\n&/ ; s/\n##>\s/ /g ; s/(^|\n)##\s/\1/g'
@@ -113,34 +110,17 @@ options::init() {
 
         local width="$(command tput cols)"
         local prog="$(command basename -- "$__options_src")"
-        local seds=()
-        local i=0
-        local var
-
-        # $1: variable name, $2: value.
-        options::add_variable() {
-            # The characters '/', '\', '&' are banned in variables because they are sed special characters.
-            [[ ! "$2" =~ [/\\\&] ]] && seds+=("s/##$1/$2/g;") || seds+=("s/##$1/OPTIONS_ILLEGAL_VAR/g;")
-        }
-
-        options::add_variable PROG "$prog"
-        options::add_variable NAME "${prog%.*}"
-
-        for var in "${__options_variables[@]}"; do
-            options::add_variable "$i" "$var"
-            (( i++ ))
-        done
 
         # Expanding variables and formatting the entire thing.
-        options::help_internal | command sed -E "${seds[*]}" | command fmt "-$width" -s
+        options::help_internal | DOLLAR=\$ PROG="$prog" NAME="${prog%.*}" SRC="$__options_src" command envsubst | command fmt "-$width" -s
         unset -f options::help_internal
         unset -f options::add_variable
         exit 0
     }
 
-    # options::getopts HANDLER MANDATORYNUM
+    # options::getopts HANDLER MANDATORY_NUM
     # Parses options and invokes HANDLER on each one with $1=the option character, $2=the option's argument (if it takes one).
-    # Exits with help if there are fewer than MANDATORYNUM positional arguments provided. Pass a negative value to ignore.
+    # Exits with help if there are fewer than MANDATORY_NUM positional arguments provided. Pass a negative value to ignore.
     # Sets $options_shift to the number you should pass to 'shift' to discard the processed arguments.
     options::getopts() {
         local arg

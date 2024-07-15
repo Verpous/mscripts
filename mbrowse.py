@@ -105,10 +105,10 @@ class Movie:
         return hash(self.get_iden())
 
 def alias(valid_items, aliases, item):
-    aliases.update({ key: key for key in valid_items })
-    with_dash = { key.replace(' ', '-'): value for key, value in aliases.items() if ' ' in key }
-    with_underscore = { key.replace(' ', '_'): value for key, value in aliases.items() if ' ' in key }
-    no_spaces = { key.replace(' ', ''): value for key, value in aliases.items() if ' ' in key }
+    aliases.update({key: key for key in valid_items})
+    with_dash = {key.replace(' ', '-'): value for key, value in aliases.items() if ' ' in key}
+    with_underscore = {key.replace(' ', '_'): value for key, value in aliases.items() if ' ' in key}
+    no_spaces = {key.replace(' ', ''): value for key, value in aliases.items() if ' ' in key}
     aliases.update(with_dash)
     aliases.update(with_underscore)
     aliases.update(no_spaces)
@@ -361,7 +361,7 @@ def is_default(movie, xkey):
 # Assumes that input is valid. That means:
 # records is a matrix of strings (that is, a list of equal-length lists of strings).
 # use_colors is False or colors is a nonempty list of color codes.
-def tabulate(records, fillchar=' ', spacious=False, use_color=True, underline_header=True, file=sys.stdin,
+def tabulate(records, fillchar=' ', spacious=False, use_color=True, underline_header=True, file=sys.stdout,
     fillcolor=  '\033[30;1m\033[K', # Gray
     column_colors=[
                 '\033[39m\033[K',   # White
@@ -483,8 +483,8 @@ parser.add_argument('-u', '--unique', default=False, action='store_true', help=
     'When merging JSONs, remove duplicate movies. Note that duplicate movies can still have a different leaving date, and this will arbitrarily omit one of them')
 parser.add_argument('-S', '--spacious', default=False, action='store_true', help=
     'Add an empty line between entries')
-parser.add_argument('-L', '--less', default=False, action='store_true', help=
-    'Pipe output to less')
+parser.add_argument('-L', '--less', choices=['always', 'auto', 'never'], default='auto', action='store', help=
+    'Choose whether to paginate with less. Defaults to %(default)s')
 parser.add_argument('-f', '--date-format', metavar='FORMAT', default=None, action='store', help=
     'Override format for date columns. Default depends on verbosity and which column. See python datetime.strftime documentation for format syntax')
 parser.add_argument('-t', '--no-titles', default=False, action='store_true', help=
@@ -509,7 +509,6 @@ verbose = args.verbose
 reverse_all = args.reverse
 uniqify = args.unique
 spacious = args.spacious
-less = args.less
 exclude_keys = args.exclude
 titles = not args.no_titles
 jsonfiles = ['-'] if len(args.JSON) == 0 else args.JSON
@@ -526,11 +525,18 @@ rdate_fmt = date_fmt if date_fmt != None else "%Y-%m-%d" if verbose else "%Y"
 wdate_fmt = date_fmt if date_fmt != None else "%Y-%m-%d"
 
 if args.color == 'always':
-    color=True
+    color = True
 elif args.color == 'auto':
-    color=sys.stdout.isatty()
+    color = sys.stdout.isatty()
 elif args.color == 'never':
-    color=False
+    color = False
+
+if args.less == 'always':
+    less = True
+elif args.less == 'auto':
+    less = None # None means TBD.
+elif args.less == 'never':
+    less = False
 
 if args.columns[0]:
     column_keys = [ck_title, ck_leaving, ck_runtime, ck_released, ck_rating, ck_metascore, ct_director]
@@ -621,6 +627,15 @@ if titles:
     dummy = Movie(None, None)
     dummy.record = [column_titles[ck] for ck in column_keys]
     movies.insert(0, dummy)
+
+# In auto less mode, can only be determined now that we know the size of the output.
+# Paginate if output is a tty and is too small to contain the output. Also activate spacious if automatically activating less.
+if less == None:
+    if sys.stdout.isatty() and os.get_terminal_size().lines < len(movies):
+        less = True
+        spacious = True
+    else:
+        less = False
 
 # Pipe to less if requested. I tried a lot of variations including of course Popen(stdin=PIPE), this is the only one that works.
 with tempfile.NamedTemporaryFile('w', encoding='utf-8') if less else sys.stdout as f:
