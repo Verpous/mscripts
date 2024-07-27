@@ -16,7 +16,7 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 # This is a library for parsing command line options (a la getopts), with a focus on brevity and easily adding the help option.
-# Usage: source this script and call options::init. You may now call options::help whenever you want, and you can call options::getopts.
+# Usage: source this script and call options::init. You may now call any API function, but in most cases you'll only need options::getopts.
 # Recognized options characters are ripped straight from the case statement which handles them.
 #
 # Program help is ripped straight from comments which start with '##' (there are a few special forms).
@@ -102,7 +102,7 @@ options::init() {
                         next
                     }
                     1
-                    END { print "  -h            Display this help and exit." }'
+                    END { print "  -h            Print this help and exit. If given twice, prints the entire source code." }'
 
             # Now doing the epilogue. It's the same as the intro, but with 3 #'s instead of 2.
             command sed -En '/^###>?\s/p' -- "$__options_src" | sed -Ez 's/^./\n&/ ; s/\n###>\s/ /g ; s/(^|\n)###\s/\1/g'
@@ -118,17 +118,24 @@ options::init() {
         exit 0
     }
 
+    options::source() {
+        # View it in vim readonly mode so that you get syntax highlighting.
+        command vim -M -- "$__options_src"
+        exit 0
+    }
+
     # options::getopts HANDLER MANDATORY_NUM
     # Parses options and invokes HANDLER on each one with $1=the option character, $2=the option's argument (if it takes one).
     # Exits with help if there are fewer than MANDATORY_NUM positional arguments provided. Pass a negative value to ignore.
     # Sets $options_shift to the number you should pass to 'shift' to discard the processed arguments.
     options::getopts() {
         local arg
+        local nhelps=0
         
         while getopts "$__options_optstring" arg "${__options_argv[@]}"; do
             case "$arg" in
                 h)
-                    options::help
+                    (( nhelps++ ))
                     ;;
                 \?)
                     echo "Invalid option: $OPTARG" >&2
@@ -146,6 +153,12 @@ options::init() {
             esac
         done
 
+        if (( nhelps > 1 )); then
+            options::source
+        elif (( nhelps == 1 )); then
+            options::help
+        fi
+        
         options_shift=$(( OPTIND - 1 ))
         (( "$2" >= 0 && "$2" > ${#__options_argv[@]} - options_shift )) && options::help
     }

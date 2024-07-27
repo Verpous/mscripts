@@ -25,7 +25,6 @@
 # TODO: Add -C option which reinterprets LISTs as categories and:
 # * if '-f' is not set, it acts as though you ran mup on the categories' dependencies.
 # * if '-f' is set, it only generates the requested categories.
-# TODO: Add option to use curl instead of browser
 
 scripts="$(dirname -- "$BASH_SOURCE")"
 source "$scripts"/options.sh
@@ -39,6 +38,8 @@ do_optimize=true
 mdir="$(path "${MOVIES_DIR:-.}")"
 default_downloads=~/Downloads # Tilde expansion won't happen if we write this string directly in the line below.
 downloads="$(path "${MOVIES_DOWNLOADS:-$default_downloads}")"
+profile="$MOVIES_PROFILE"
+browser=auto
 popts=()
 fopts=()
 handle_option() {
@@ -55,6 +56,13 @@ handle_option() {
             ;;
         d) ## DIR ## The downloads directory used by your web browser. Defaults to MOVIES_DOWNLOADS env variable, or '~/Downloads' if it doesn't exist.
             downloads="$(path "$2")"
+            ;;
+        u) ## PROFILE ## The profile path used by your web browser. Defaults to MOVIES_PROFILE env variable, or profile-less if it doesn't exist.
+            profile="$2"
+            ;;
+        b) ## BROWSER ## Which browser to use for exporting lists. Options are 'edge', 'chrome', 'firefox', or 'auto'. Defaults to 'auto', which uses your default browser.
+            [[ "$2" == @(edge|chrome|firefox|auto) ]] || utils::die "Invalid BROWSER: '$2'"
+            browser="$2"
             ;;
         f) ## Skip the step where mfetch is run to update the local JSONs. Use the JSONs that already exist in the movies directory.
             do_fetch=false
@@ -79,6 +87,8 @@ shift $options_shift
 [[ -d "$mdir" && -w "$mdir" ]] || utils::die "Movies directory '$mdir' doesn't exist or you do not have permissions for it"
 [[ -d "$downloads" && -w "$downloads" && -r "$downloads" ]] || utils::die "Downloads directory '$downloads' doesn't exist or you do not have permissions for it"
 [[ -v config ]] || config="$mdir/mconfig.txt"
+
+trap 'kill $(jobs -p) 2> /dev/null' EXIT
 
 declare -A default_lists=()
 declare -A list_ids=()
@@ -142,36 +152,38 @@ fetch() {
 
     echo "Downloading '$out_csv'..."
 
-    # Old code which no longer works because imdb are cunts.
-    if false; then
-        local initial_csv="$(get_latest_csv)"
-        local timeout=20
-        SECONDS=0
+    local initial_csv="$(get_latest_csv)"
+    local timeout=40
+    SECONDS=0
 
-        # I can't for the life of me figure out how to be logged in with cURL so we use the browser where you're assumed to be already logged in.
-        python -m webbrowser "https://www.imdb.com/list/ls$lid/export?ref_=ttls_exp" > /dev/null
+    # If the server hasn't been spun yet or it died, spin a server which handles list download requests.
+    if ! jobs %% &> /dev/null; then
+        mcsv.py -p "$profile" -b "$browser" &
 
-        # We'll try to obtain the most recent csv in the downloads folder, until it's a different one than before we started downloading.
-        while local in_csv="$(get_latest_csv)"; [[ "$initial_csv" == "$in_csv" ]]; do
-            if (( SECONDS > timeout )); then
-                echo "Timed out when trying to download '$out_csv'. Skipping it" >&2
-                return 1
-            fi
-        done
-
-        # When the file is created it's sometimes empty for a bit. At some point it jumps to being fully written, without any inbetween.
-        # So this waits for the file size to not be zero.
-        # NOTE: [[ -e "..." ]] would be a lot nicer but for some reason it sometimes creates a copy of the file and messes everything up.
-        while (( "$(stat --format="%s" "$downloads/$in_csv")" == 0 )); do
-            if (( SECONDS > timeout )); then
-                echo "Timed out when trying to download '$out_csv'. Skipping it" >&2
-                return 1
-            fi
-        done
-    else # Even hackier new solution. All the ugly is contained in a python script which downloads the list with selenium.
-        local in_csv
-        in_csv="$(mcsv.py "$lid" "$downloads")" || return 1
+        # Give it time to start listening on the UDP socket, and also launch the browser.
+        sleep 3
     fi
+
+    # Request to download this list from the server.
+    echo "$lid" > /dev/udp/127.0.0.1/42069
+
+    # We'll try to obtain the most recent csv in the downloads folder, until it's a different one than before we started downloading.
+    while local in_csv="$(get_latest_csv)"; [[ "$initial_csv" == "$in_csv" ]]; do
+        if (( SECONDS > timeout )); then
+            echo "Timed out when trying to download '$out_csv'. Skipping it" >&2
+            return 1
+        fi
+    done
+
+    # When the file is created it's sometimes empty for a bit. At some point it jumps to being fully written, without any inbetween.
+    # So this waits for the file size to not be zero.
+    # NOTE: [[ -e "..." ]] would be a lot nicer but for some reason it sometimes creates a copy of the file and messes everything up.
+    while (( "$(stat --format="%s" "$downloads/$in_csv")" == 0 )); do
+        if (( SECONDS > timeout )); then
+            echo "Timed out when trying to download '$out_csv'. Skipping it" >&2
+            return 1
+        fi
+    done
 
     mv "$downloads/$in_csv" "$mdir/$out_csv"
 
@@ -232,6 +244,9 @@ for lname in "${uniqlists[@]}"; do
             ;;
     esac
 done
+
+# Kill the server if it's running. If we don't do this now it will happen when this script quits anyway.
+echo quit > /dev/udp/127.0.0.1/42069
 
 # Conditionally also running mprint to update the text files.
 if $do_gen; then
