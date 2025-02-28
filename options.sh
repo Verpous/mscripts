@@ -114,13 +114,17 @@ options::init() {
         # Expanding variables and formatting the entire thing.
         options::help_internal | DOLLAR=\$ PROG="$prog" NAME="${prog%.*}" SRC="$__options_src" command envsubst | command fmt "-$width" -s
         unset -f options::help_internal
-        unset -f options::add_variable
         exit 0
     }
 
     options::source() {
-        # View it in vim readonly mode so that you get syntax highlighting.
-        command vim -M -- "$__options_src"
+        # View it in vim readonly mode so that you get syntax highlighting. But if output is a tty vim will fail.
+        if [[ -t 1 ]]; then
+            command vim -M -- "$__options_src"
+        else
+            command cat -- "$__options_src"
+        fi
+
         exit 0
     }
 

@@ -191,7 +191,6 @@ def main() -> None:
     assert controller is not None
 
     # Use empty instead of None as default because it's easier for callers to use.
-    # TODO: auto detect the default profile for all browsers?
     if args.profile != '':
         controller.set_profile(args.profile)
 
@@ -215,7 +214,6 @@ def main() -> None:
                 except:
                     traceback.print_exc()
 
-            # TODO: consider spinning a new browser instance instead?
             assert is_alive(driver)
 
 if __name__ == '__main__':

@@ -48,8 +48,8 @@ class Movie:
     def get_watched(self):
         return datetime.datetime.strptime(self.obj['watched'], '%Y-%m-%d')
 
-    def get_rating(self):
-        return float(self.obj['rating'])
+    def get_rating(self, default=None):
+        return float(self.obj['rating']) if self.obj['rating'] != '' else default
 
     def get_votes(self):
         return int(self.obj['votes'])
@@ -295,7 +295,7 @@ def num_to_pretty_str(num, abbreviate=False):
             num /= 1000.0
         return '{}{}'.format('{:f}'.format(num).rstrip('0').rstrip('.'), ['', 'K', 'M', 'B', 'T'][magnitude])
     else:
-        return '{:,}'.format(movie.get_votes())
+        return '{:,}'.format(num)
 
 
 def runtime_str(runtime):
@@ -309,7 +309,7 @@ def sort_func(sort_key):
     if sort_key == sk_watched:
         return True, lambda movie: movie.get_watched()
     if sort_key == sk_rating:
-        return True, lambda movie: movie.get_rating()
+        return True, lambda movie: movie.get_rating(-1)
     if sort_key == sk_votes:
         return True, lambda movie: movie.get_votes()
     if sort_key == sk_metascore:
@@ -339,7 +339,7 @@ def get_column(movie, col_key):
     if col_key == ck_released:
         return movie.get_released().strftime(rdate_fmt)
     if col_key == ck_rating:
-        return str(movie.get_rating())
+        return do(str, movie.get_rating(), '-')
     if col_key == ck_votes:
         return num_to_pretty_str(movie.get_votes(), abbreviate=not verbose)
     if col_key == ck_metascore:

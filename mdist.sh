@@ -272,7 +272,7 @@ div_pow_of_10() {
 }
 
 # First: mbrowse. For most distributions, --dsv only means we don't pad the output with spaces.
-# For crew-size, the DSV delimiter matters and -v matters too. -v is also important for votes.
+# For crew-size and title-length, the DSV delimiter matters and -v matters too. -v is also important for votes.
 "$scripts"/mbrowse.py --dsv \| -tv -C "$column" -f "$fmt" "${bopts[@]}" -- "$@" |
     # Taking care of -g, -v if provided.
     if [[ ! "$include" && ! "$exclude" ]]; then
@@ -287,8 +287,8 @@ div_pow_of_10() {
                 sed -En "
                     h                           # Store the full line for later.
                     s/^.*#(.*)$/\1/g            # Examine just the full date which we appended after a '#'
-                    \\${sep}${exclude}${sep}b   # Skip this line if it matches the exclude pattern
-                    \\${sep}${include}${sep}!b  # Now include patterns.
+                    \\${sep}${exclude}${sep}b   # Skip this line if it matches the exclude pattern.
+                    \\${sep}${include}${sep}!b  # Skip this line if it doesn't match the include pattern.
                     g                           # Restore the full line we backed up earlier.
                     s/^(.*)#.*$/\1/gp           # Keep only the date we wish to examine for this distribution."
                 ;;

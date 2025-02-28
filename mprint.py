@@ -72,7 +72,7 @@ class Appearance:
 def json_to_movie(json_movie, crew_type):
     iden = json_movie['imdbID']
     title = json_movie['title']
-    rating = float(json_movie['rating'])
+    rating = float(json_movie['rating']) if len(json_movie['rating']) != 0 else -1
     votes = int(json_movie['votes'])
     metascore = int(json_movie['metascore'])
     myrating = int(json_movie['myrating']) if len(json_movie['myrating']) != 0 else -1
@@ -257,7 +257,7 @@ def gsort_func(gsort_key):
     if gsort_key == gsk_nmovies:
         return lambda tup: len(tup[1])
     if gsort_key == gsk_rating:
-        return lambda tup: mean(appearance.movie.rating for appearance in tup[1])
+        return lambda tup: mean(appearance.movie.rating for appearance in tup[1] if appearance.movie.rating != -1)
     if gsort_key == gsk_votes:
         return lambda tup: mean(appearance.movie.votes for appearance in tup[1])
     if gsort_key == gsk_metascore:
